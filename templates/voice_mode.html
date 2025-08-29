@@ -1,0 +1,303 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Left Side - Voice Visualization -->
+    <div class="w-1/3 flex flex-col items-center justify-center p-8 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <!-- Voice Visualization Container -->
+        <div class="w-64 h-64 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-8">
+            <!-- Placeholder for voice visualization -->
+            <div id="voiceVisualization" class="w-32 h-32 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Voice Button -->
+        <button id="voiceButton" class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center hover:bg-blue-600 transition-colors">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Right Side - Chat Transcript -->
+    <div class="w-2/3 flex flex-col bg-white dark:bg-gray-800">
+        <!-- Messages Area -->
+        <div id="messages" class="flex-1 overflow-y-auto px-8 pt-8 pb-24 space-y-4">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    let phoneNumber = sessionStorage.getItem('phoneNumber');
+    let sessionId = sessionStorage.getItem('sessionId');
+    
+    // Debug: Log phone number status
+    console.log('Voice Mode - Phone Number:', phoneNumber, 'Type:', typeof phoneNumber);
+    
+    // Function to check phone number status
+    function checkPhoneNumberStatus() {
+        const storedPhone = sessionStorage.getItem('phoneNumber');
+        console.log('Voice Mode - Stored phone number:', storedPhone, 'Local phoneNumber:', phoneNumber);
+        return storedPhone && storedPhone !== 'null' && storedPhone !== '';
+    }
+
+    // Generate a new session ID if one doesn't exist
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('sessionId', sessionId);
+    }
+
+    // Check if phone number is verified globally
+    if (!checkPhoneNumberStatus()) {
+        console.log('Voice Mode - No valid phone number found, voice features disabled');
+        // Show a message to the user that they need to set up phone number in settings
+        const messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Phone Number Required</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Please set up your phone number in the settings to use voice features.</p>
+                        <button onclick="document.getElementById('phoneDropdownBtn').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            Open Settings
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        console.log('Voice Mode - Phone number found, initializing features');
+        // Phone number exists, initialize voice features immediately
+        initializeVoiceFeatures();
+    }
+
+    // Listen for phone verification from other modules
+    window.addEventListener('phoneNumberVerified', (event) => {
+        phoneNumber = event.detail.phoneNumber;
+        console.log('Voice Mode - Received phone verification event:', phoneNumber);
+        initializeVoiceFeatures();
+
+        // Handle browser tab close - clear phone verification records
+        window.addEventListener('beforeunload', async function(event) {
+            try {
+                // Clear all phone verification records when browser tab closes
+                await fetch('/api/clear-phone-verifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                console.log('Phone verification records cleared on tab close');
+            } catch (error) {
+                console.error('Error clearing phone verification records:', error);
+            }
+        });
+
+        // Note: Removed visibilitychange event listener to prevent clearing phone verification when switching tabs
+    });
+
+    function initializeVoiceFeatures() {
+        // Add audio player element
+        const audioPlayer = document.createElement('audio');
+        audioPlayer.style.display = 'none';
+        document.body.appendChild(audioPlayer);
+
+        // Function to play audio response
+        async function playAudioResponse(audioBlob) {
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlayer.src = audioUrl;
+            try {
+                await audioPlayer.play();
+            } catch (error) {
+                console.error('Error playing audio:', error);
+            }
+        }
+
+        let chatHistory = JSON.parse(sessionStorage.getItem('chatHistory') || '[]');
+
+        // Chat functionality
+        const messagesContainer = document.getElementById('messages');
+        const voiceVisualization = document.getElementById('voiceVisualization');
+
+        function addMessage(content, isUser = false, saveToHistory = true) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-2';
+
+            // Function to convert URLs to clickable links
+            const convertUrlsToLinks = (text) => {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return text.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-blue-400 hover:text-blue-300 underline">${url}</a>`);
+            };
+
+            if (!isUser) {
+                messageDiv.innerHTML = `
+                    <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 max-w-[80%] break-words">
+                        <p class="text-sm text-gray-800 dark:text-gray-200">${convertUrlsToLinks(content)}</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex-1"></div>
+                    <div class="bg-blue-500 rounded-lg p-3 max-w-[80%] break-words">
+                        <p class="text-sm text-white">${convertUrlsToLinks(content)}</p>
+                    </div>
+                `;
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            if (saveToHistory) {
+                chatHistory.push({ content, isUser });
+                sessionStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            }
+        }
+
+        // Load chat history
+        function loadChatHistory() {
+            messagesContainer.innerHTML = '';
+            chatHistory.forEach(msg => {
+                addMessage(msg.content, msg.isUser, false);
+            });
+        }
+
+        loadChatHistory();
+
+        // Voice recording functionality
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        const voiceButton = document.getElementById('voiceButton');
+
+        voiceButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await sendAudioToServer(audioBlob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                voiceButton.classList.add('bg-red-500');
+                voiceButton.classList.remove('bg-blue-500');
+                voiceVisualization.classList.add('animate-pulse');
+
+                // Add user message indicating recording
+                addMessage('🎤 Recording...', true);
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                addMessage('Error: Could not access microphone', false);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+
+            isRecording = false;
+            voiceButton.classList.remove('bg-red-500');
+            voiceButton.classList.add('bg-blue-500');
+            voiceVisualization.classList.remove('animate-pulse');
+        }
+
+        async function sendAudioToServer(audioBlob) {
+            try {
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.wav');
+                formData.append('phone_number', phoneNumber);
+
+                const response = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.text) {
+                    // Remove the "Recording..." message and add the actual transcription
+                    const lastMessage = messagesContainer.lastElementChild;
+                    if (lastMessage && lastMessage.textContent.includes('Recording...')) {
+                        lastMessage.remove();
+                    }
+                    
+                    addMessage(data.text, true);
+                    
+                    // Process the transcribed message
+                    await processMessage(data.text);
+                } else {
+                    addMessage('Sorry, I could not understand what you said. Please try again.', false);
+                }
+            } catch (error) {
+                console.error('Error sending audio:', error);
+                addMessage('Error: Could not process audio', false);
+            }
+        }
+
+        async function processMessage(message) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        phone_number: phoneNumber,
+                        session_id: sessionId,
+                        use_tts: true
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    addMessage('Sorry, there was an error processing your message.', false);
+                } else {
+                    addMessage(data.response, false);
+                    if (data.audio_url) {
+                        // Fetch and play the audio
+                        const audioResponse = await fetch(data.audio_url);
+                        const audioBlob = await audioResponse.blob();
+                        playAudioResponse(audioBlob);
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing message:', error);
+                addMessage('Sorry, there was an error connecting to the server.', false);
+            }
+        }
+    }
+</script>
+{% endblock %}

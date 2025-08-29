@@ -1,0 +1,87 @@
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+extend-include = ["*.ipynb"]
+
+line-length = 200
+indent-width = 4
+
+[lint]
+select = [
+    "B", # common writing bugs
+    "C4", # comprehensions
+    "Q", # quotes
+    "A", # prevent variable shadowing
+    "COM", # trailing commas
+    "RET", # return
+    "SIM", # simplified calls
+    "ARG", # unused arguments
+    "PTH", # pathlib > os.path
+    "I", # isort
+    "C90", # too many nested if
+    "NPY", # numpy
+    "PD", # pandas
+    "N", # pep8-naming
+    "PERF", # performance related
+    "E", # pycodestyle error
+    "W", # pycodestyle warning
+    "F", # pyflakes
+    "PL", # pylint
+    "UP", # pyupgrade
+    "RUF", # Ruff own rules
+]
+
+# extend-select = [
+#     "ERA", # no commented code
+#     "S", # bandit security
+#     "INP", # required __init__.py
+#     "DTZ", # datetime
+# ]
+    
+ignore = ["COM819", "RUF012", "C901", "RET505"]
+extend-ignore = ["PD901", "W191", "B018", "E101", "W293", "SIM105", "PLR2004"]
+unfixable = ["F401", "F841"]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = ["os.getenv"]
+
+[lint.mccabe]
+max-complexity = 5
+
+[lint.flake8-tidy-imports]
+[lint.flake8-tidy-imports.banned-api]
+
+[lint.pylint]
+max-returns = 10
+
+[format]
+quote-style = "double"
+line-ending = "auto"
+docstring-code-format = true
+indent-style = "tab"

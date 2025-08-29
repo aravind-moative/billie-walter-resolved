@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="Davidson Water, Inc. Dashboard - Real-time monitoring and analytics">
+    <title>{% block title %}Davidson Water, Inc. Dashboard{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/css/output.css">
+    <script>
+        // Prevent flash of light mode
+        if (localStorage.getItem('darkMode') === 'true' ||
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <!-- Billie Logo Top Right -->
+    <div class="fixed top-0 right-5 z-50 p-4">
+        <a href="/" title="Billie Home">
+                            <img src="/static/billie-logo.png" alt="Billie Logo" class="h-12 w-auto drop-shadow-lg hover:scale-105 transition-transform duration-200" />
+        </a>
+    </div>
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="hidden lg:flex lg:flex-shrink-0">
+            <div class="flex flex-col w-64 h-full">
+                <!-- Sidebar component -->
+                <div class="flex flex-col flex-grow bg-slate-800 dark:bg-gray-950 overflow-y-auto h-full">
+                    <!-- Logo -->
+                    <div class="flex items-center h-16 px-4 bg-slate-900 dark:bg-black gap-x-3">
+                                        <img class="h-8 w-auto" src="/static/favicon.png" alt="Davidson Water, Inc.">
+                <span class="text-white font-semibold text-lg">Davidson Water, Inc.</span>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <nav class="flex-1 px-2 py-4 space-y-1">
+                        <!-- Main Pages Section -->
+                        <div class="px-3 py-2">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Main Pages</h3>
+                        </div>
+                        <a href="/chat" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.url.path in ['/chat', '/'] %}text-white bg-slate-900 dark:bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-slate-700{% endif %}">
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Chat
+                        </a>
+                        <a href="/voice" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.url.path == '/voice' %}text-white bg-slate-900 dark:bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-slate-700{% endif %}">
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                            Voice
+                        </a>
+                        <a href="/convoai" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.url.path == '/convoai' %}text-white bg-slate-900 dark:bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-slate-700{% endif %}">
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            ConvoAI
+                        </a>
+                        <a href="/database" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.url.path == '/database' %}text-white bg-slate-900 dark:bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-slate-700{% endif %}">
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                            </svg>
+                            Database
+                        </a>
+                        <a href="/dashboard" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md {% if request.url.path == '/dashboard' %}text-white bg-slate-900 dark:bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-slate-700{% endif %}">
+                            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </nav>
+                    
+                    <!-- Spacer to push user info to bottom -->
+                    <div class="flex-1"></div>
+                    
+                    <!-- Dark Mode Toggle in Sidebar -->
+                    <div class="flex-shrink-0 px-4 py-3 border-t border-slate-700">
+                        <button id="darkModeToggle" class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors duration-200">
+                            <div class="flex items-center">
+                                <svg class="mr-3 h-5 w-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                                </svg>
+                                <svg class="mr-3 h-5 w-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                                <span class="hidden dark:block">Dark Mode</span>
+                                <span class="block dark:hidden">Light Mode</span>
+                            </div>
+                            <div class="ml-2">
+                                <!-- Toggle Switch -->
+                                <div class="relative inline-flex h-5 w-9 items-center rounded-full bg-gray-600 dark:bg-primary-600 transition-colors">
+                                    <span class="sr-only">Toggle dark mode</span>
+                                    <span class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-5"></span>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- User info at bottom -->
+                    <div class="flex-shrink-0 flex border-t border-slate-700 p-4">
+                        <div class="flex items-center justify-between w-full">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-8 w-8 bg-slate-600 rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium text-white">{{ session.get('user_name', 'User')[0].upper() }}</span>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-white">{{ session.get('user_name', 'User') }}</p>
+                                    <p class="text-xs font-medium text-gray-400">{{ session.get('user_email', '') }}</p>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="/logout" class="p-1.5 text-gray-400 hover:text-white hover:bg-slate-700 rounded-md transition-colors duration-200" title="Logout">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 0v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer extension to fill bottom gap -->
+                    <div class="h-16 bg-slate-800 dark:bg-gray-950 flex-shrink-0 border-t border-slate-700"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-1 overflow-y-auto focus:outline-none bg-white dark:bg-gray-900 pb-16">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Sticky Footer - always at bottom of viewport -->
+    <footer class="fixed bottom-0 left-64 right-0 bg-slate-800 dark:bg-gray-950 shadow-sm border-t border-slate-700 h-16 flex items-center z-40 hidden lg:flex">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
+            <p class="text-center text-sm text-gray-300 dark:text-gray-400">
+                &copy; 2025 Davidson Water, Inc. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Mobile Footer - full width for smaller screens -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-slate-800 dark:bg-gray-950 shadow-sm border-t border-slate-700 h-16 flex items-center z-40 lg:hidden">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 w-full">
+            <p class="text-center text-sm text-gray-300 dark:text-gray-400">
+                &copy; 2025 Davidson Water, Inc. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    {% if request.url.path in ['/chat', '/', '/voice', '/convoai'] %}
+    <!-- Settings Toggle Button -->
+    <button id="phoneDropdownBtn" class="fixed bottom-20 left-4 w-12 h-12 bg-gray-800 dark:bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors duration-200 z-50 border border-gray-600 dark:border-gray-300">
+        <svg class="w-6 h-6 text-white dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+    </button>
+
+    <!-- Settings Dropdown Menu -->
+    <div id="phoneDropdown" class="hidden fixed left-4 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 border border-gray-200 dark:border-gray-700 bottom-36">
+        <div class="p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">Settings</h3>
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Phone Number</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter your phone number to enable SMS conversation.</p>
+                    <div id="currentPhoneDisplay" class="mb-4 hidden">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Current phone number:</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white" id="currentPhoneNumber"></p>
+                    </div>
+                    <input type="tel" id="phoneInput" placeholder="(123) 456-7890" class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
+                    <div id="phoneAlert" class="hidden mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                        <p class="text-sm text-red-700 dark:text-red-400" id="alertMessage"></p>
+                    </div>
+                    <button id="savePhoneBtn" class="w-full mt-4 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">Save</button>
+                    <button id="clearChatBtn" class="w-full mt-4 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 hidden">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // Dark mode toggle functionality
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const currentPhoneDisplay = document.getElementById('currentPhoneDisplay');
+        const currentPhoneNumber = document.getElementById('currentPhoneNumber');
+        const phoneDropdownBtn = document.getElementById('phoneDropdownBtn');
+        const phoneDropdown = document.getElementById('phoneDropdown');
+        const basePhoneInput = document.getElementById('phoneInput');
+        const savePhoneBtn = document.getElementById('savePhoneBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const phoneAlert = document.getElementById('phoneAlert');
+        const alertMessage = document.getElementById('alertMessage');
+
+        // Custom alert function
+        function showAlert(message, duration = 6000) {
+            if (alertMessage) {
+                alertMessage.textContent = message;
+                if (phoneAlert) phoneAlert.classList.remove('hidden');
+
+                setTimeout(() => {
+                    if (phoneAlert) phoneAlert.classList.add('hidden');
+                }, duration);
+            }
+        }
+
+        // Function to update phone number display
+        window.updatePhoneNumberDisplay = function(phoneNumber) {
+            if (phoneNumber) {
+                if (currentPhoneDisplay) currentPhoneDisplay.classList.remove('hidden');
+                if (currentPhoneNumber) {
+                    const formattedPhone = phoneNumber.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+                    currentPhoneNumber.textContent = formattedPhone;
+                    
+                    // Add verification status
+                    const isVerified = sessionStorage.getItem('phoneVerified') === 'true';
+                    if (isVerified) {
+                        currentPhoneNumber.innerHTML = `${formattedPhone} <span class="text-green-600 text-xs ml-2">✅ Verified</span>`;
+                    } else {
+                        currentPhoneNumber.innerHTML = `${formattedPhone} <span class="text-red-600 text-xs ml-2">❌ Not Verified</span>`;
+                    }
+                }
+            } else {
+                if (currentPhoneDisplay) currentPhoneDisplay.classList.add('hidden');
+                if (currentPhoneNumber) currentPhoneNumber.textContent = '';
+            }
+        };
+
+        // Function to update reset button visibility
+        function updateResetButtonVisibility() {
+            const phoneNumber = sessionStorage.getItem('phoneNumber');
+            if (clearChatBtn) {
+                if (phoneNumber) {
+                    clearChatBtn.classList.remove('hidden');
+                } else {
+                    clearChatBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // Function to notify phone number changes
+        window.notifyPhoneNumberChange = function(phoneNumber) {
+            // Dispatch a custom event that other components can listen to
+            window.dispatchEvent(new CustomEvent('phoneNumberChanged', {
+                detail: { phoneNumber: phoneNumber }
+            }));
+        };
+
+        // Function to notify chat clear
+        window.notifyChatClear = function() {
+            window.dispatchEvent(new CustomEvent('chatCleared'));
+        };
+
+        // Format phone number as user types
+        function formatPhoneNumber(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    value = `(${value}`;
+                } else if (value.length <= 6) {
+                    value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+                } else {
+                    value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
+                }
+            }
+            input.value = value;
+        }
+
+        // Format phone number as user types
+        if (basePhoneInput) {
+            basePhoneInput.addEventListener('input', (e) => formatPhoneNumber(e.target));
+        }
+
+        // Clear chat history
+        if (clearChatBtn) {
+            clearChatBtn.addEventListener('click', async () => {
+                sessionStorage.setItem('chatHistory', JSON.stringify([]));
+                notifyChatClear();
+                try {
+                    const phoneNumber = sessionStorage.getItem('phoneNumber');
+                    const sessionId = sessionStorage.getItem('sessionId');
+                    const response = await fetch('/api/clear-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            phone_number: phoneNumber,
+                            session_id: sessionId
+                        })
+                    });
+
+                    if (!response.ok) {
+                        showAlert('Failed to reset data on server. Please try again.');
+                        return;
+                    }
+
+                    // Also remove the phone number
+                    sessionStorage.removeItem('phoneNumber');
+                    updatePhoneNumberDisplay(null);
+                    updateResetButtonVisibility();
+                    notifyPhoneNumberChange(null);
+                    
+                    if (phoneDropdown) {
+                        phoneDropdown.classList.remove('hidden');
+                        sessionStorage.removeItem('phonePanelHidden');
+                    }
+
+                } catch (error) {
+                    showAlert('An error occurred while resetting. Please try again.');
+                    console.error('Error resetting chat state:', error);
+                }
+            });
+        }
+
+        // Save phone number
+        if (savePhoneBtn && basePhoneInput && phoneDropdown) {
+            savePhoneBtn.addEventListener('click', async () => {
+                const phone = basePhoneInput.value.replace(/\D/g, '');
+                if (phone.length === 10) {
+                    try {
+                        // Verify phone number against database
+                        const verifyResponse = await fetch('/api/verify-phone', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                phone_number: phone
+                            })
+                        });
+
+                        const verifyResult = await verifyResponse.json();
+                        
+                        if (verifyResult.verified) {
+                            // Phone number is verified in database
+                            const currentPhone = sessionStorage.getItem('phoneNumber');
+                            const sessionId = sessionStorage.getItem('sessionId');
+                            
+                            // Clear chat history if phone number is different
+                            if (currentPhone !== phone) {
+                                sessionStorage.setItem('chatHistory', JSON.stringify([]));
+                                try {
+                                    await fetch('/api/clear-data', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            phone_number: phone,
+                                            session_id: sessionId
+                                        })
+                                    });
+                                } catch (error) {
+                                    console.error('Error resetting chat state:', error);
+                                }
+                            }
+
+                            // Store phone number and verification status
+                            sessionStorage.setItem('phoneNumber', phone);
+                            sessionStorage.setItem('phoneVerified', 'true');
+                            sessionStorage.setItem('customerData', JSON.stringify(verifyResult.customer_data));
+                            
+                            basePhoneInput.value = '';
+                            phoneDropdown.classList.add('hidden');
+                            updatePhoneNumberDisplay(phone);
+                            updateResetButtonVisibility();
+                            
+                            // Show success message
+                            showAlert('Phone number verified successfully! ✅', 3000);
+                            
+                            // Notify other components about the phone number change
+                            notifyPhoneNumberChange(phone);
+                            
+                            // Dispatch phone verification event
+                            window.dispatchEvent(new CustomEvent('phoneNumberVerified', {
+                                detail: { 
+                                    phoneNumber: phone,
+                                    verified: true,
+                                    customerData: verifyResult.customer_data
+                                }
+                            }));
+                            
+                        } else {
+                            // Phone number not found in database
+                            showAlert('Phone number not found in our system. Please check the number or contact support.');
+                        }
+                    } catch (error) {
+                        console.error('Error verifying phone number:', error);
+                        showAlert('Error verifying phone number. Please try again.');
+                    }
+                } else {
+                    showAlert('Please enter a valid 10-digit phone number');
+                }
+            });
+        }
+
+        // Initialize display and buttons
+        const initialPhoneNumber = sessionStorage.getItem('phoneNumber');
+        if (initialPhoneNumber) {
+            updatePhoneNumberDisplay(initialPhoneNumber);
+            
+            // If phone number exists but not verified, verify it automatically
+            const isVerified = sessionStorage.getItem('phoneVerified');
+            if (!isVerified || isVerified !== 'true') {
+                console.log('Phone number exists but not verified, verifying automatically...');
+                // Auto-verify the existing phone number
+                fetch('/api/verify-phone', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phone_number: initialPhoneNumber
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.verified) {
+                        sessionStorage.setItem('phoneVerified', 'true');
+                        sessionStorage.setItem('customerData', JSON.stringify(result.customer_data));
+                        updatePhoneNumberDisplay(initialPhoneNumber);
+                        console.log('Phone number auto-verified successfully');
+                    } else {
+                        console.log('Phone number auto-verification failed:', result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error auto-verifying phone number:', error);
+                });
+            }
+        } else {
+            // Show phone number panel by default if no phone number exists
+            // Only show if we haven't explicitly hidden it
+            if (sessionStorage.getItem('phonePanelHidden') !== 'true') {
+                if (phoneDropdown) phoneDropdown.classList.remove('hidden');
+            }
+        }
+
+        // Initialize reset button visibility
+        updateResetButtonVisibility();
+
+        // Phone functionality - only add listeners if elements exist
+        if (phoneDropdownBtn && phoneDropdown) {
+            // Save panel state when closing
+            phoneDropdownBtn.addEventListener('click', () => {
+                phoneDropdown.classList.toggle('hidden');
+                if (phoneDropdown.classList.contains('hidden')) {
+                    sessionStorage.setItem('phonePanelHidden', 'true');
+                } else {
+                    sessionStorage.removeItem('phonePanelHidden');
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!phoneDropdownBtn.contains(e.target) && !phoneDropdown.contains(e.target)) {
+                    phoneDropdown.classList.add('hidden');
+                    sessionStorage.setItem('phonePanelHidden', 'true');
+                }
+            });
+        }
+
+        // Dark mode toggle functionality - simplified version
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                // Save preference to localStorage (keep this in localStorage since it's a user preference)
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+                
+                // Notify chart to update colors if it exists (for dashboard page)
+                if (typeof window.updateChartColors === 'function') {
+                    window.updateChartColors();
+                }
+            });
+        }
+
+        // Handle browser tab close - clear phone verification records
+        window.addEventListener('beforeunload', async function(event) {
+            try {
+                // Clear all phone verification records when browser tab closes
+                await fetch('/api/clear-phone-verifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                console.log('Phone verification records cleared on tab close');
+            } catch (error) {
+                console.error('Error clearing phone verification records:', error);
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

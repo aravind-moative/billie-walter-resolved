@@ -1,0 +1,499 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">ConvoAI</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">ElevenLabs Conversational AI</p>
+                </div>
+            </div>
+                                                   <div class="flex items-center space-x-4">
+                  <!-- Connection Status -->
+                  <div id="connectionStatus" class="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+                      <div id="statusDot" class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <span id="statusText" class="text-sm text-gray-600 dark:text-gray-300">Disconnected</span>
+                  </div>
+              </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col max-w-4xl mx-auto w-full p-6">
+        <!-- Chat Container -->
+        <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            <!-- Chat Messages Area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+                            <p class="text-sm text-gray-800 dark:text-gray-200">Hello! I'm your Davidson Water assistant. I can help you with billing, outages, payments, and more. Just speak or type your question!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Voice Status Area -->
+            <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-center space-x-4">
+                    <!-- Animated Speaking Logo with Spectrum -->
+                    <div class="text-center">
+                        <!-- Main Logo -->
+                        <div class="relative mb-4">
+                            <div id="logoContainer" class="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Animated Spectrum Bars -->
+                            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 flex items-end space-x-1 h-8">
+                                <div class="spectrum-bar w-1 bg-blue-400 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-purple-400 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-blue-500 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-purple-500 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-blue-600 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-purple-600 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-blue-500 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-purple-500 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-blue-400 rounded-full"></div>
+                                <div class="spectrum-bar w-1 bg-purple-400 rounded-full"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Text -->
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <span id="statusText">Ready to listen</span>
+                        </div>
+                        
+                        <!-- Subtitle -->
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Voice listening automatically activated
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+ {% block extra_scripts %}
+ <style>
+     .spectrum-bar {
+         height: 4px;
+         transition: height 0.1s ease-in-out;
+         animation: spectrum-pulse 1.5s ease-in-out infinite;
+     }
+     
+     @keyframes spectrum-pulse {
+         0%, 100% { height: 4px; }
+         50% { height: 20px; }
+     }
+     
+     .spectrum-bar:nth-child(1) { animation-delay: 0s; }
+     .spectrum-bar:nth-child(2) { animation-delay: 0.1s; }
+     .spectrum-bar:nth-child(3) { animation-delay: 0.2s; }
+     .spectrum-bar:nth-child(4) { animation-delay: 0.3s; }
+     .spectrum-bar:nth-child(5) { animation-delay: 0.4s; }
+     .spectrum-bar:nth-child(6) { animation-delay: 0.5s; }
+     .spectrum-bar:nth-child(7) { animation-delay: 0.6s; }
+     .spectrum-bar:nth-child(8) { animation-delay: 0.7s; }
+     .spectrum-bar:nth-child(9) { animation-delay: 0.8s; }
+     .spectrum-bar:nth-child(10) { animation-delay: 0.9s; }
+ </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let phoneNumber = sessionStorage.getItem('phoneNumber');
+    let sessionId = sessionStorage.getItem('sessionId');
+    
+    // Debug: Log phone number status
+    console.log('ConvoAI - Phone Number:', phoneNumber, 'Type:', typeof phoneNumber);
+    
+    // Function to check phone number status
+    function checkPhoneNumberStatus() {
+        const storedPhone = sessionStorage.getItem('phoneNumber');
+        console.log('ConvoAI - Stored phone number:', storedPhone, 'Local phoneNumber:', phoneNumber);
+        return storedPhone && storedPhone !== 'null' && storedPhone !== '';
+    }
+
+    // Generate a new session ID if one doesn't exist
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('sessionId', sessionId);
+    }
+
+    // Check if phone number is verified globally
+    if (!checkPhoneNumberStatus()) {
+        console.log('ConvoAI - No valid phone number found, ConvoAI features disabled');
+        // Show a message to the user that they need to set up phone number in settings
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.innerHTML = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Phone Number Required</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Please set up your phone number in the settings to use ConvoAI features.</p>
+                        <button onclick="document.getElementById('phoneDropdownBtn').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            Open Settings
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        console.log('ConvoAI - Phone number found, initializing features');
+        // Phone number exists, initialize voice features immediately
+        initializeVoiceFeatures();
+    }
+
+    // Listen for phone verification from other modules
+    window.addEventListener('phoneNumberVerified', (event) => {
+        phoneNumber = event.detail.phoneNumber;
+        console.log('ConvoAI - Received phone verification event:', phoneNumber);
+        initializeVoiceFeatures();
+    });
+
+    function initializeVoiceFeatures() {
+        // Original ConvoAI functionality
+     let isConnected = false;
+     let isVoiceListening = false;
+     let mediaRecorder = null;
+     let audioChunks = [];
+        let ws = null;
+        let stream = null;
+        let isTabActive = true; // Track if ConvoAI tab is active
+
+        const chatMessages = document.getElementById('chatMessages');
+        const statusText = document.getElementById('statusText');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const statusDot = document.getElementById('statusDot');
+        const logoContainer = document.getElementById('logoContainer');
+
+        // Check if this tab is currently active
+        function checkTabActive() {
+            return !document.hidden && document.hasFocus();
+        }
+
+        // Check if we should keep WebSocket alive (more lenient than checkTabActive)
+        function shouldKeepWebSocketAlive() {
+            return !document.hidden; // Only close if page is completely hidden
+        }
+
+        // WebSocket connection
+    function connectWebSocket() {
+            // Only connect if page is not completely hidden
+            if (!shouldKeepWebSocketAlive()) {
+                console.log('ConvoAI page completely hidden, skipping WebSocket connection');
+                return;
+            }
+
+            ws = new WebSocket('ws://localhost:8000/ws');
+        
+            ws.onopen = function() {
+             console.log('WebSocket connected');
+             isConnected = true;
+                statusDot.className = 'w-2 h-2 bg-green-500 rounded-full';
+                statusText.textContent = 'Connected';
+                connectionStatus.className = 'flex items-center space-x-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900';
+                
+                // Send phone number to WebSocket
+                if (phoneNumber) {
+                    ws.send(JSON.stringify({
+                        type: 'phone_number',
+                        phone_number: phoneNumber,
+                        session_id: sessionId
+                    }));
+                }
+                
+                // Start voice listening after connection only if tab is still active
+             setTimeout(() => {
+                    if (!isVoiceListening && checkTabActive()) {
+                 startVoiceListening();
+                    }
+             }, 1000);
+         };
+        
+            ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+                
+                if (data.type === 'transcription') {
+                    addMessage(data.text, true);
+                    // Process the transcription with the AI
+                    processMessage(data.text);
+                } else if (data.type === 'ai_response') {
+                    addMessage(data.response, false);
+                    if (data.audio_url) {
+                        playAudioResponse(data.audio_url);
+                    }
+                }
+            };
+            
+            ws.onclose = function() {
+            console.log('WebSocket disconnected');
+            isConnected = false;
+                statusDot.className = 'w-2 h-2 bg-gray-400 rounded-full';
+                statusText.textContent = 'Disconnected';
+                connectionStatus.className = 'flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700';
+                
+            // Try to reconnect after 3 seconds only if tab is still active
+            if (checkTabActive()) {
+            setTimeout(connectWebSocket, 3000);
+            }
+        };
+        
+            ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            };
+        }
+
+        // Voice recording functions
+        async function startVoiceListening() {
+            if (isVoiceListening) return;
+            
+            // Only start listening if tab is active
+            if (!checkTabActive()) {
+                console.log('ConvoAI tab not active, skipping voice listening start');
+                return;
+            }
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+              audioChunks = [];
+              
+              mediaRecorder.ondataavailable = function(event) {
+                      audioChunks.push(event.data);
+              };
+              
+              mediaRecorder.onstop = function() {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    // Only send audio if tab is active and WebSocket is connected
+                    if (ws && ws.readyState === WebSocket.OPEN && checkTabActive()) {
+                        ws.send(audioBlob);
+                    } else {
+                        console.log('Skipping audio send: tab not active or WebSocket not connected');
+                    }
+                };
+                
+                mediaRecorder.start();
+               isVoiceListening = true;
+                statusText.textContent = 'Listening...';
+                logoContainer.classList.add('animate-pulse');
+              
+                console.log('Voice listening started');
+                     } catch (error) {
+               console.error('Error starting voice listening:', error);
+                addMessage('Error: Could not access microphone. Please check permissions.', false);
+           }
+      }
+     
+           function stopVoiceListening() {
+            if (!isVoiceListening) return;
+          
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                  mediaRecorder.stop();
+            }
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            isVoiceListening = false;
+              statusText.textContent = 'Ready to listen';
+            logoContainer.classList.remove('animate-pulse');
+            
+            console.log('Voice listening stopped');
+        }
+
+        // Message handling
+        function addMessage(content, isUser = false) {
+           const messageDiv = document.createElement('div');
+           messageDiv.className = 'flex items-start space-x-3';
+           
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0';
+            
+            if (isUser) {
+                iconDiv.className += ' bg-blue-500';
+                iconDiv.innerHTML = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
+            } else {
+                iconDiv.className += ' bg-gradient-to-r from-blue-500 to-purple-600';
+                iconDiv.innerHTML = '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+            }
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex-1';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = isUser ? 'bg-blue-500 text-white rounded-lg p-3 ml-auto max-w-[80%]' : 'bg-gray-100 dark:bg-gray-700 rounded-lg p-3';
+            messageContent.innerHTML = `<p class="text-sm">${content}</p>`;
+            
+            contentDiv.appendChild(messageContent);
+            messageDiv.appendChild(iconDiv);
+            messageDiv.appendChild(contentDiv);
+           
+           chatMessages.appendChild(messageDiv);
+           chatMessages.scrollTop = chatMessages.scrollHeight;
+       }
+       
+        async function processMessage(message) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        phone_number: phoneNumber,
+                        session_id: sessionId,
+                        use_tts: true
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage('Sorry, there was an error processing your message.', false);
+                } else {
+                    addMessage(data.response, false);
+                    if (data.audio_url) {
+                        playAudioResponse(data.audio_url);
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing message:', error);
+                addMessage('Sorry, there was an error connecting to the server.', false);
+            }
+        }
+
+        function playAudioResponse(audioUrl) {
+            try {
+                const audio = new Audio(audioUrl);
+               audio.play().catch(e => {
+                   console.error('Error playing audio:', e);
+               });
+           } catch (error) {
+               console.error('Error creating audio element:', error);
+           }
+       }
+
+                  // Handle page unload to clean up
+       window.addEventListener('beforeunload', function() {
+           if (isVoiceListening) {
+               stopVoiceListening();
+           }
+           if (ws) {
+               ws.close();
+           }
+       });
+       
+       // Handle page visibility change - keep WebSocket alive, only pause voice listening
+       document.addEventListener('visibilitychange', function() {
+           isTabActive = checkTabActive();
+           console.log('Tab visibility changed, active:', isTabActive);
+           
+           if (document.hidden) {
+               // Tab is hidden, pause voice listening but keep WebSocket alive
+               if (isVoiceListening) {
+                   console.log('Tab hidden: Pausing voice listening but keeping WebSocket alive');
+                   // Don't stop voice listening completely, just pause audio recording
+                   if (mediaRecorder && mediaRecorder.state === 'recording') {
+                       mediaRecorder.pause();
+                   }
+               }
+               // Keep WebSocket connection alive - don't close it
+           } else {
+               // Tab is visible again, resume voice listening if it was paused
+               if (isVoiceListening && mediaRecorder && mediaRecorder.state === 'paused') {
+                   console.log('Tab visible: Resuming voice listening');
+                   mediaRecorder.resume();
+               }
+               // WebSocket should still be connected, no need to reconnect
+           }
+       });
+       
+       // Handle window focus/blur - keep WebSocket alive, only pause voice listening
+       window.addEventListener('focus', function() {
+           isTabActive = true;
+           console.log('Window focused, ConvoAI tab active');
+           // Resume voice listening if it was paused
+           if (isVoiceListening && mediaRecorder && mediaRecorder.state === 'paused') {
+               console.log('Window focused: Resuming voice listening');
+               mediaRecorder.resume();
+           }
+       });
+       
+       window.addEventListener('blur', function() {
+           isTabActive = false;
+           console.log('Window blurred, ConvoAI tab inactive');
+           // Pause voice listening but keep WebSocket alive
+           if (isVoiceListening && mediaRecorder && mediaRecorder.state === 'recording') {
+               console.log('Window blurred: Pausing voice listening but keeping WebSocket alive');
+               mediaRecorder.pause();
+           }
+       });
+       
+       // Handle navigation clicks to stop listening when leaving ConvoAI
+       document.addEventListener('click', function(e) {
+           const target = e.target.closest('a');
+           if (target && target.href && !target.href.includes('/convoai') && isVoiceListening) {
+               stopVoiceListening();
+           }
+       });
+
+         // Connect to WebSocket when page loads only if page is not completely hidden
+     if (shouldKeepWebSocketAlive()) {
+     connectWebSocket();
+     }
+     
+            // Fallback: Start listening after 3 seconds only if tab is still active
+     setTimeout(() => {
+         if (!isVoiceListening && !isConnected && checkTabActive()) {
+             console.log('Fallback: Starting voice listening without WebSocket...');
+             startVoiceListening();
+         }
+     }, 3000);
+    }
+
+    // Handle browser tab close - clear phone verification records
+    window.addEventListener('beforeunload', async function(event) {
+        try {
+            // Clear all phone verification records when browser tab closes
+            await fetch('/api/clear-phone-verifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            console.log('Phone verification records cleared on tab close');
+        } catch (error) {
+            console.error('Error clearing phone verification records:', error);
+        }
+    });
+
+    // Note: Removed visibilitychange event listener to prevent clearing phone verification when switching tabs
+});
+</script>
+{% endblock %}

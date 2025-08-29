@@ -1,0 +1,18 @@
+# robots.txt for Exceleron Outage Chatbot
+User-agent: *
+Allow: /
+Allow: /dashboard
+
+# Disallow access to sensitive directories and API endpoints
+Disallow: /api/
+Disallow: /static/js/
+Disallow: /static/css/
+Disallow: /.env
+Disallow: /config/
+Disallow: /private/
+
+# Prevent caching of dynamic content
+Disallow: /*?*
+
+# Sitemap location (uncomment and update when you have a sitemap)
+# Sitemap: https://your-domain.com/sitemap.xml

@@ -1,0 +1,1632 @@
+{% extends "base_dashboard.html" %}
+
+{% block extra_head %}
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.1/dist/MarkerCluster.Default.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #dashboard-map {
+            height: 800px;
+            width: 100%;
+            z-index: 1;
+        }
+        .leaflet-container {
+            border-radius: 0.5rem;
+        }
+        .dark .leaflet-container {
+            background: #111827; /* Tailwind gray-900 */
+        }
+        .kpi-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .card-hover {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        #cumulativeChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .chart-container {
+            height: 24rem !important;
+            min-height: 24rem !important;
+            max-height: none !important;
+        }
+
+        /* Chat Modal Styles */
+        .chat-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: none;
+        }
+
+        .chat-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 700px;
+            background-color: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 10000;
+        }
+
+        .dark .chat-modal {
+            background-color: #1f2937;
+        }
+
+        .chat-modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9fafb;
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+
+        .dark .chat-modal-header {
+            background-color: #111827;
+            border-bottom-color: #374151;
+        }
+
+        .chat-modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            flex-grow: 1;
+        }
+
+        .dark .chat-modal-header h3 {
+            color: #f9fafb;
+        }
+
+        .chat-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .chat-modal-close:hover {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        
+        .dark .chat-modal-close {
+            color: #9ca3af;
+        }
+
+        .dark .chat-modal-close:hover {
+            background-color: #374151;
+            color: #d1d5db;
+        }
+
+        .chat-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .chat-message {
+            display: flex;
+            margin-bottom: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar.user {
+            background-color: #dbeafe;
+        }
+
+        .chat-avatar.bot {
+            background-color: #dcfce7;
+        }
+
+        .dark .chat-avatar {
+            background-color: #374151;
+        }
+
+        .dark .chat-avatar.user {
+            background-color: #1e3a8a;
+        }
+
+        .dark .chat-avatar.bot {
+            background-color: #166534;
+        }
+
+        .chat-avatar.csr {
+            background-color: #fef3c7;
+        }
+
+        .dark .chat-avatar {
+            background-color: #374151;
+        }
+
+        .dark .chat-avatar.user {
+            background-color: #1e3a8a;
+        }
+
+        .dark .chat-avatar.bot {
+            background-color: #166534;
+        }
+
+        .dark .chat-avatar.csr {
+            background-color: #92400e;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 0.875rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .chat-bubble.user {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .chat-bubble.bot {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .dark .chat-bubble.bot {
+            background-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .chat-bubble.csr {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-bottom-left-radius: 0.25rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .dark .chat-bubble.csr {
+            background-color: #451a03;
+            color: #fbbf24;
+        }
+
+        @media (max-width: 768px) {
+            .chat-modal {
+                width: 90%;
+                height: 90%;
+                max-width: none;
+                max-height: none;
+            }
+        }
+
+        /* CSR Status Box Styles */
+        .csr-status-box {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .csr-status-content {
+            background-color: #ffffff;
+            color: #000000;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid #d1d5db;
+            max-width: 80%;
+        }
+
+        .dark .csr-status-content {
+            background-color: #1f2937;
+            color: #ffffff;
+            border-color: #374151;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Content with Sidebar Layout -->
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Water Outage Management</h1>
+                <p class="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">Real-time monitoring and incident tracking for water service</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div id="filters-bar" class="sticky top-0 z-50 bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-4 mb-6">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white">Water Outage Filters</h3>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Water Outages Only - Nature filter removed -->
+                <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-blue-900 dark:text-blue-100">Water Outages Only</span>
+                </div>
+
+                <div class="w-48">
+                    <label for="global-time-filter" class="sr-only">Time Period</label>
+                    <div class="relative" id="time-filter-dropdown">
+                        <select id="global-time-filter" class="hidden">
+                            <option value="15m" selected>Last 15 minutes</option>
+                            <option value="30m">Last 30 minutes</option>
+                            <option value="1h">Last 1 hour</option>
+                            <option value="2h">Last 2 hours</option>
+                            <option value="4h">Last 4 hours</option>
+                            <option value="12h">Last 12 hours</option>
+                            <option value="1d">Last 1 day</option>
+                            <option value="">All Occurrences</option>
+                        </select>
+                        <button type="button" class="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            <span class="font-medium" id="time-filter-label">Last 15 minutes</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <div id="time-filter-menu" class="absolute z-20 mt-1 w-full rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                            <div class="py-1">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="15m">Last 15 minutes</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="30m">Last 30 minutes</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="1h">Last 1 hour</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="2h">Last 2 hours</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="4h">Last 4 hours</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="12h">Last 12 hours</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="1d">Last 1 day</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="">All Occurrences</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-48">
+                    <label for="global-scale-filter" class="sr-only">Scale of Outage</label>
+                    <div class="relative" id="scale-filter-dropdown">
+                        <select id="global-scale-filter" class="hidden">
+                             <option value="none" selected>Outage Scale</option>
+                            <option value="small">Small Only</option>
+                            <option value="medium">Medium Only</option>
+                            <option value="large">Large Only</option>
+                        </select>
+                        <button type="button" class="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-400 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500" disabled>
+                            <span class="font-medium" id="scale-filter-label">Outage Scale</span>
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <div id="scale-filter-menu" class="absolute z-20 mt-1 w-full rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                            <div class="py-1">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="none">Outage Scale</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="small">Small Only</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="medium">Medium Only</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-value="large">Large Only</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <button id="apply-global-filters" class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all duration-200">
+                    Apply Filters
+                </button>
+                <button type="button" id="reset-global-filters" class="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors hover:underline">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <!-- KPI Row -->
+        <div class="flex gap-6 mb-6">
+            <!-- KPI 1: Mixed Outages -->
+            <div class="flex-1 bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-6 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-info-50 dark:bg-info-900/20 rounded-lg">
+                        <svg class="w-6 h-6 text-info-600 dark:text-info-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 id="kpi1-label" class="text-lg font-semibold text-gray-900 dark:text-white">Water Outages</h3>
+                            <div class="relative group">
+                                <button class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200 flex items-center justify-center text-xs font-medium">
+                                    i
+                                </button>
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                    Total count of outages for the selected nature
+                                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-1">
+                            <span id="kpi1-value" class="text-3xl font-bold text-gray-900 dark:text-white">24</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <span id="kpi1-change" class="font-medium">↓ 12%</span> from last hour
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI 2: Highest Outage Zipcode -->
+            <div class="flex-1 bg-white dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-6 hover:shadow-md transition-all duration-200">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
+                        <svg class="w-6 h-6 text-warning-600 dark:text-warning-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Most Impacted Zipcode</h3>
+                            <div class="relative group">
+                                <button class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200 flex items-center justify-center text-xs font-medium">
+                                    i
+                                </button>
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                    Zipcode with the highest concentration of outage reports
+                                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-3 mt-1">
+                            <span id="kpi2-value" class="text-3xl font-bold text-gray-900 dark:text-white">--</span>
+                        </div>
+                        <p id="kpi2-label" class="text-xs text-gray-500 dark:text-gray-400 mt-1">has most reports</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI 3: Outage Scale Classifications -->
+            <div class="flex-1   dark:bg-gray-900 rounded-xl shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-6 hover:shadow-md transition-all duration-200" style="background-color: rgba(64, 64, 64, 0.25); position: relative;">
+                <!-- Coming Soon overlay -->
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; z-index: 10; pointer-events: none; opacity: 0.9;" class="text-gray-900 dark:text-white">
+                    Coming Soon
+                </div>
+                
+                <div style="opacity: 0.1;" class="flex items-center gap-4">
+                    <div class="p-3 bg-info-50 dark:bg-info-900/20 rounded-lg">
+                        <svg class="w-6 h-6 text-info-600 dark:text-info-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Outage Scale</h3>
+                            <div class="relative">
+                                <button class="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex items-center justify-center text-xs font-medium cursor-default">
+                                    i
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 mt-2">
+                            <div class="flex flex-col text-center">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Large</h4>
+                                <div class="flex flex-col items-center mt-1">
+                                    <span id="kpi3-large-value" class="text-xl font-bold text-gray-900 dark:text-white">0</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col text-center">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Medium</h4>
+                                <div class="flex flex-col items-center mt-1">
+                                    <span id="kpi3-medium-value" class="text-xl font-bold text-gray-900 dark:text-white">0</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col text-center">
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Small</h4>
+                                <div class="flex flex-col items-center mt-1">
+                                    <span id="kpi3-small-value" class="text-xl font-bold text-gray-900 dark:text-white">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Map Section -->
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Water Outage Map</h3>
+                        <p class="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">Real-time visualization of water infrastructure, outages, and service requests</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <!-- Map Container -->
+                <div id="dashboard-map" class="rounded-lg bg-gray-50 dark:bg-gray-800/50"></div>
+            </div>
+        </div>
+
+        <!-- Recent Outages Table Section -->
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Recent Outages</h3>
+                        <p class="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">Latest 5 outage reports ordered by time</p>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Address</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nature</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Start Time</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-outages-tbody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- Table rows will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Loading recent outages...
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Enhanced Multi-Line Chart Section -->
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Outage Trends</h3>
+                <p class="text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">Hourly interval trend lines showing patterns for each outage type over the last 24 hours</p>
+                    </div>
+                    <!-- Chart Legend -->
+                    <div id="outage-trends-legend" class="flex items-center space-x-4">
+                        <!-- Legend items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="h-80 relative chart-container bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                    <canvas id="cumulativeChart" style="display: block; width: 100%; height: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Report Generation Section -->
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 p-6">
+            <div class="text-center">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Generate Report</h3>
+                <p class="text-sm font-normal text-gray-600 dark:text-gray-400 mb-6">Export current data to CSV format for analysis</p>
+                <button id="export-csv" class="bg-success-600 hover:bg-success-700 text-white font-medium py-2.5 px-6 rounded-md text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-success-600 dark:focus:ring-offset-gray-900 flex items-center gap-2 mx-auto hover:shadow-lg transform hover:-translate-y-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.1/dist/leaflet.markercluster.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== NEW DASHBOARD PAGE LOAD ===');
+
+            // Global variables
+            let filters = {
+                nature: "Water", // Only water outages
+                time: '15m',
+                scale: null
+            };
+            let cumulativeChart = null;
+            let chartDataStore = null; // Variable to store chart data
+            let map, markers;
+            let tileLayer;
+
+            // Initialize all components
+            initializeMap();
+            initializeUI();
+            applyGlobalFilters();
+
+            function initializeUI() {
+                document.getElementById('apply-global-filters').addEventListener('click', applyGlobalFilters);
+                document.getElementById('reset-global-filters').addEventListener('click', resetGlobalFilters);
+                document.getElementById('export-csv').addEventListener('click', handleCSVExport);
+
+                // Nature filter removed - Water only
+                setupDropdown('time-filter-dropdown');
+            }
+
+            // Custom Dropdown Logic
+            function setupDropdown(dropdownId) {
+                const dropdown = document.getElementById(dropdownId);
+                if (!dropdown) return;
+
+                const select = dropdown.querySelector('select');
+                const button = dropdown.querySelector('button');
+                const label = button.querySelector('span');
+                const menu = dropdown.querySelector('[id$="-menu"]');
+
+                // Set initial label from the hidden select element
+                const selectedOption = select.options[select.selectedIndex];
+                if (selectedOption) {
+                    label.textContent = selectedOption.textContent;
+                }
+
+                let leaveTimeout;
+
+                dropdown.addEventListener('mouseenter', () => {
+                    clearTimeout(leaveTimeout);
+                    menu.classList.remove('hidden');
+                });
+
+                dropdown.addEventListener('mouseleave', () => {
+                    leaveTimeout = setTimeout(() => {
+                        menu.classList.add('hidden');
+                    }, 50); // 50ms delay before hiding
+                });
+
+                // Handle option selection
+                menu.addEventListener('click', (event) => {
+                    if (event.target.tagName === 'A') {
+                        event.preventDefault();
+                        const value = event.target.dataset.value;
+                        const text = event.target.textContent;
+
+                        // Update the hidden select and the button label
+                        select.value = value;
+                        label.textContent = text;
+                        menu.classList.add('hidden'); // Hide menu immediately after selection
+
+                        // Manually trigger a change event for other listeners
+                        const changeEvent = new Event('change', { bubbles: true });
+                        select.dispatchEvent(changeEvent);
+                    }
+                });
+            }
+
+            // Nature filter removed - Water only
+            setupDropdown('time-filter-dropdown');
+
+            function updateKPI1Display(count, nature) {
+                document.getElementById('kpi1-value').textContent = count || 0;
+
+                // Always show Water Outages
+                document.getElementById('kpi1-label').textContent = 'Water Outages';
+            }
+
+            function updateKPI2Display(data) {
+                const zipcode = data?.zipcode || '--';
+                const areaName = data?.area_name;
+
+                document.getElementById('kpi2-value').textContent = zipcode;
+
+                // Update the label to include area name if available
+                const labelText = areaName ? `${areaName} has most reports` : 'has most reports';
+                document.getElementById('kpi2-label').textContent = labelText;
+            }
+            
+            function updateKPI3Display(data) {
+                const smallValue = data?.small || 0;
+                const mediumValue = data?.medium || 0;
+                const largeValue = data?.large || 0;
+
+                document.getElementById('kpi3-small-value').textContent = smallValue;
+                document.getElementById('kpi3-medium-value').textContent = mediumValue;
+                document.getElementById('kpi3-large-value').textContent = largeValue;
+            }
+
+            function updateChartLegend(counts) {
+                const legendContainer = document.getElementById('outage-trends-legend');
+                if (!legendContainer) return;
+
+                legendContainer.innerHTML = ''; // Clear existing legend
+
+                // Only show Water outages
+                const count = counts.Water || 0;
+                const { color, fillColor, svgIconHtml } = getOutageStyle('Water');
+
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'flex items-center';
+
+                    legendItem.innerHTML = `
+                        <span class="flex items-center justify-center w-5 h-5 mr-2 rounded-full flex-shrink-0" style="background-color: ${fillColor}; border: 1px solid ${color};">
+                            ${svgIconHtml}
+                        </span>
+                    <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Water : &nbsp;</span>
+                        <span class="ml-1 text-sm font-bold text-gray-700 dark:text-gray-300">${count}</span>
+                    `;
+                    legendContainer.appendChild(legendItem);
+            }
+
+            function updateLegendDisplay(counts) {
+                // Only show water count
+                document.getElementById('water-count').textContent = counts.Water || 0;
+                
+                console.log('Water outage count updated:', counts.Water || 0);
+            }
+
+            function initializeMap() {
+                map = L.map('dashboard-map').setView([32.7767, -96.7970], 12);
+
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const tileUrl = isDarkMode 
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                tileLayer = L.tileLayer(tileUrl, {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 19
+                }).addTo(map);
+
+                markers = L.markerClusterGroup({
+                    showCoverageOnHover: false,
+                    maxClusterRadius: 60,
+                    iconCreateFunction: function(cluster) {
+                        const count = cluster.getChildCount();
+                        const childMarkers = cluster.getAllChildMarkers();
+                        const natures = [...new Set(childMarkers.map(marker => marker.options.nature))];
+                        const nature = natures.length === 1 ? natures[0] : 'Mixed';
+                        
+                        const { color, fillColor, svgIconHtml } = getOutageStyle(nature);
+                        
+                        let size = 40;
+                        if (count < 10) size = 35;
+                        if (count > 100) size = 50;
+
+                        const iconHtml = `
+                            <div style="
+                                background-color: ${fillColor}; 
+                                border: 2px solid ${color}; 
+                                width: ${size}px; 
+                                height: ${size}px; 
+                                border-radius: 50%; 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center;
+                                position: relative;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                            ">
+                                ${svgIconHtml}
+                                <span style="
+                                    position: absolute; 
+                                    top: -2px; 
+                                    right: -2px; 
+                                    background: #dc2626; /* red-600 */
+                                    color: white; 
+                                    border-radius: 50%; 
+                                    width: 18px;
+                                    height: 18px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 10px; 
+                                    font-weight: bold; 
+                                    border: 1px solid white;
+                                ">${count}</span>
+                            </div>`;
+                        
+                        return L.divIcon({
+                            html: iconHtml,
+                            className: 'custom-cluster-icon',
+                            iconSize: L.point(size, size)
+                        });
+                    }
+                });
+                map.addLayer(markers);
+
+                const legend = L.control({ position: 'topright' });
+                legend.onAdd = function (map) {
+                    const div = L.DomUtil.create('div', 'info legend bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg');
+                    div.innerHTML = `
+                        <div class="flex flex-col space-y-2">
+                            <div class="flex items-center">
+                                <span class="flex items-center justify-center w-6 h-6 mr-2 rounded-full" style="background-color: #DBEAFE; border: 1px solid #BFDBFE;">
+                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12c0 2.21-1.79 4-4 4s-4-1.79-4-4c0-2.21 4-8 4-8s4 5.79 4 8zm-10 4c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-2-4-2-4s-2 2.9-2 4zm12 0c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-2-4-2-4s-2 2.9-2 4z"></path></svg>
+                                </span>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Water: <span class="text-blue-600 dark:text-blue-400 font-semibold" id="water-count">6</span></span>
+                            </div>
+                        </div>
+                    `;
+                    L.DomEvent.on(div, 'click mousedown dblclick', L.DomEvent.stopPropagation);
+                    return div;
+                };
+                legend.addTo(map);
+
+                const filterBar = document.getElementById('filters-bar');
+                const legendEl = legend.getContainer();
+                const legendPositioner = legendEl.parentNode;
+                const mapSection = document.getElementById('dashboard-map').parentElement.parentElement;
+
+                if (filterBar && legendPositioner && mapSection) {
+                    const updateLegendPosition = () => {
+                        const filterBarRect = filterBar.getBoundingClientRect();
+                        const mapSectionRect = mapSection.getBoundingClientRect();
+
+                        const stickyTop = filterBarRect.bottom + 16;
+                        const shouldBeFixed = mapSectionRect.top <= stickyTop && mapSectionRect.bottom > stickyTop;
+
+                        if (shouldBeFixed) {
+                            if (legendPositioner.style.position !== 'fixed') {
+                                legendPositioner.style.position = 'fixed';
+                                legendPositioner.style.right = '40px';
+                                legendPositioner.style.zIndex = '1001';
+                            }
+                            legendPositioner.style.top = `${stickyTop}px`;
+                        } else {
+                            if (legendPositioner.style.position === 'fixed') {
+                                legendPositioner.style.position = '';
+                                legendPositioner.style.top = '';
+                                legendPositioner.style.right = '';
+                                legendPositioner.style.zIndex = '';
+                            }
+                        }
+                    };
+
+                    window.addEventListener('scroll', updateLegendPosition, { passive: true });
+                    window.addEventListener('resize', updateLegendPosition, { passive: true });
+                    updateLegendPosition();
+                }
+            }
+
+            function getOutageStyle(nature) {
+                let color, fillColor, svgIconHtml;
+                let iconSizeClass = 'w-4/6 h-4/6';
+
+                switch (nature.toLowerCase()) {
+                    case 'water':
+                        color = '#3B82F6'; fillColor = '#DBEAFE';
+                        svgIconHtml = `<svg class="text-blue-600" fill="currentColor" viewBox="0 0 24 24" style="width: 65%; height: 65%;"><path d="M16 12c0 2.21-1.79 4-4 4s-4-1.79-4-4c0-2.21 4-8 4-8s4 5.79 4 8zm-10 4c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-2-4-2-4s-2 2.9-2 4zm12 0c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-2-4-2-4s-2 2.9-2 4z"></path></svg>`;
+                        break;
+                    case 'mixed':
+                        color = '#78716c'; fillColor = '#d6d3d1';
+                        svgIconHtml = `<svg fill="none" class="text-stone-700" stroke="currentColor" viewBox="0 0 24 24" style="width: 60%; height: 60%;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>`;
+                        break;
+                    default:
+                        color = '#6B7280'; fillColor = '#F3F4F6';
+                        svgIconHtml = '';
+                }
+                return { color, fillColor, svgIconHtml };
+            }
+
+            function updateMapWithOutages(outages) {
+                markers.clearLayers();
+
+                outages.forEach(outage => {
+                    if (outage.latitude && outage.longitude) {
+                        const lat = parseFloat(outage.latitude);
+                        const lng = parseFloat(outage.longitude);
+                        const { color, fillColor, svgIconHtml } = getOutageStyle(outage.nature);
+
+                        const size = 35;
+                        const iconHtml = `
+                            <div style="
+                                background-color: ${fillColor}; 
+                                border: 2px solid ${color}; 
+                                width: ${size}px; 
+                                height: ${size}px; 
+                                border-radius: 50%; 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                                position: relative;
+                            ">
+                                ${svgIconHtml}
+                                <span style="
+                                    position: absolute; 
+                                    top: -2px; 
+                                    right: -2px; 
+                                    background: #dc2626; /* red-600 */
+                                    color: white; 
+                                    border-radius: 50%; 
+                                    width: 18px;
+                                    height: 18px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 10px; 
+                                    font-weight: bold; 
+                                    border: 1px solid white;
+                                ">1</span>
+                            </div>`;
+
+                        const icon = L.divIcon({
+                            html: iconHtml,
+                            className: 'custom-single-icon',
+                            iconSize: [size, size],
+                            iconAnchor: [size / 2, size / 2]
+                        });
+                        
+                        const marker = L.marker([lat, lng], { 
+                            icon: icon,
+                            nature: outage.nature
+                        });
+                        
+                        marker.bindPopup(createIndividualOutagePopup(outage));
+                        markers.addLayer(marker);
+                    }
+                });
+            }
+
+            function createIndividualOutagePopup(outage) {
+                const { fillColor } = getOutageStyle(outage.nature);
+                
+                return `<div style="font-family: system-ui; font-size: 14px; min-width: 200px;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Outage Report</div>
+                    <div style="margin-bottom: 8px;">
+                        <div style="margin-bottom: 4px;"><strong>Reference:</strong> ${outage.reference_number}</div>
+                        <div style="margin-bottom: 4px;"><strong>Customer:</strong> ${outage.name || 'N/A'}</div>
+                        <div style="margin-bottom: 4px;"><strong>Address:</strong> ${outage.address}</div>
+                        <div style="margin-bottom: 4px;">
+                            <strong>Nature:</strong> 
+                            <span style="background: ${fillColor}; color: #1f2937; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 4px;">
+                                ${outage.nature}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 4px;"><strong>Started:</strong> ${formatDateTime(outage.start_time)}</div>
+                    </div>
+                </div>`;
+            }
+
+            function getOutageColors(nature) {
+                const colorMap = {
+                    'Water': { fill: '#3b82f6', border: '#1d4ed8' },
+                    'Mixed': { fill: '#d6d3d1', border: '#78716c' }
+                };
+                return colorMap[nature] || { fill: '#e5e7eb', border: '#9ca3af' };
+            }
+
+            function getNatureBadgeClass(nature) {
+                const badgeClasses = {
+                    'Water': 'text-blue-600 dark:text-blue-400', // Blue to match map  
+                };
+                return badgeClasses[nature] || 'text-gray-800 dark:text-gray-400';
+            }
+
+            function getStatusBadgeClass(status) {
+                const statusClasses = {
+                    'Reported': 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+                    'Accepted': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400', 
+                    'In Progress': 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
+                    'Resolved': 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                };
+                return statusClasses[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+            }
+
+            async function fetchDashboardData() {
+                console.log('Fetching data with filters:', filters);
+                try {
+                    const response = await fetch('/dashboard/filter', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(filters)
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        console.log('Received data:', data);
+
+                        // Store chart data
+                        chartDataStore = data.chart_data;
+
+                        // Update all dashboard components with new data
+                        updateKPI1Display(data.outages.length, filters.nature);
+                        updateKPI2Display(data.highest_outage_zipcode);
+                        updateKPI3Display(data.scale_counts);
+                        updateLegendDisplay(data.legend_counts);
+                        updateChartLegend(data.legend_counts);
+                        updateMapWithOutages(data.outages);
+                        displayLatestAlerts(data.alerts);
+                        createLineGraph(chartDataStore);
+                        
+                        if (data.outages.length === 0) {
+                            showToast("No data available for the selected filters.");
+                        }
+
+                    } else {
+                        console.error('Failed to load dashboard data:', data.error);
+                        showToast(`Error: ${data.error}`);
+                    }
+                } catch (error) {
+                    console.error('Error fetching dashboard data:', error);
+                    showToast('An unexpected network error occurred.');
+                }
+            }
+            
+            function displayLatestAlerts(alerts) {
+                const container = document.getElementById('recent-outages-tbody');
+                container.innerHTML = '';
+
+                if (alerts.length === 0) {
+                    container.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-4h-7m5 4h-7"></path>
+                                    </svg>
+                                    No recent outages found
+                                </div>
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                alerts.forEach((alert, index) => {
+                    // Get nature badge color
+                    const natureBadgeClass = getNatureBadgeClass(alert.nature);
+                    // Get status badge color
+                    const statusBadgeClass = getStatusBadgeClass(alert.status);
+                    
+                    // Determine if Update button should be shown (not for resolved status)
+                    const showUpdateButton = alert.status !== 'Resolved';
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            ${alert.name || 'Unknown'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate" title="${alert.address}">
+                            ${alert.address || 'Address not available'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${natureBadgeClass}">
+                                ${alert.nature}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            ${formatDateTime(alert.start_time)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass}">
+                                ${alert.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <a href="#" onclick="handleViewClick('${alert.name || 'Unknown'}', event)" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    View
+                                </a>
+                                ${showUpdateButton ? `
+                                <a href="#" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Update
+                                </a>
+                                ` : ''}
+                            </div>
+                        </td>
+                    `;
+                    container.appendChild(row);
+                });
+
+                console.log(`Displayed ${alerts.length} recent outages in table`);
+            }
+
+            function displayErrorInTable(errorMessage) {
+                const container = document.getElementById('recent-outages-tbody');
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                ${errorMessage}
+                            </div>
+                        </td>
+                    </tr>`;
+            }
+
+            function formatDateTime(dateTimeString) {
+                if (!dateTimeString) return 'N/A';
+                
+                try {
+                    const date = new Date(dateTimeString);
+                    return date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (error) {
+                    return dateTimeString;
+                }
+            }
+
+            // Chart Functions
+            function createLineGraph(chartData) {
+                console.log('Creating multi-line chart with data:', chartData);
+
+                const ctx = document.getElementById('cumulativeChart');
+                if (!ctx) {
+                    console.error('Chart canvas element not found');
+                    return;
+                }
+
+                const context = ctx.getContext('2d');
+
+                // Clear any existing chart
+                if (cumulativeChart) {
+                    cumulativeChart.destroy();
+                }
+
+                // Force canvas dimensions
+                const container = ctx.parentElement;
+                ctx.width = container.offsetWidth;
+                ctx.height = container.offsetHeight;
+
+                console.log('Canvas dimensions:', ctx.width, 'x', ctx.height);
+
+                // Define colors matching the map legend
+                const colors = {
+                    'Water': {
+                        fill: 'rgba(59, 130, 246, 0.8)', // Semi-transparent Blue for bars
+                        border: '#1d4ed8' // Solid Blue border
+                    }
+                };
+
+                // Detect current theme for dynamic colors
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const textColor = isDarkMode ? '#ffffff' : '#1f2937'; // White in dark mode, dark gray in light mode
+                const gridColor = isDarkMode ? '#374151' : '#e5e7eb'; // Darker grid lines in dark mode, lighter in light mode
+
+                // Create datasets for Chart.js - now as line charts
+                const datasets = Object.entries(chartData.datasets).map(([type, data]) => ({
+                    label: type,
+                    data: data,
+                    backgroundColor: colors[type]?.fill || 'rgba(156, 163, 175, 0.2)', // Area fill color
+                    borderColor: colors[type]?.border || 'rgb(107, 114, 128)',
+                    borderWidth: 2,
+                    pointBackgroundColor: colors[type]?.border || 'rgb(107, 114, 128)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: colors[type]?.border || 'rgb(107, 114, 128)',
+                    pointRadius: 4, // Increase dot size
+                    pointHoverRadius: 6, // Increase dot size on hover
+                    tension: 0, // Makes the line straight
+                    fill: false // No area fill
+                }));
+
+                // Dynamically set y-axis max value
+                let maxDataValue = 0;
+                datasets.forEach(dataset => {
+                    const maxInData = Math.max(...dataset.data, 0);
+                    if (maxInData > maxDataValue) {
+                        maxDataValue = maxInData;
+                    }
+                });
+                const yAxisMax = Math.max(4, Math.ceil(maxDataValue * 2));
+
+                cumulativeChart = new Chart(context, {
+                    type: 'line', // Changed from 'bar' to 'line'
+                    data: {
+                        labels: chartData.labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        layout: {
+                            padding: 20
+                        },
+                        scales: {
+                            x: {
+                                stacked: false, // Not applicable for line chart
+                                offset: true,
+                                title: {
+                                    display: true,
+                                    text: 'Time Intervals (Last 24 Hours)',
+                                    color: textColor, // Dynamic color based on theme
+                                    font: {
+                                        weight: '500',
+                                        size: 14
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: gridColor, // Dynamic grid color based on theme
+                                    lineWidth: 1,
+                                    drawOnChartArea: false, // Only draw vertical lines for x-axis
+                                    drawTicks: true,
+                                    borderDash: [3, 3]
+                                },
+                                ticks: {
+                                    color: textColor, // Dynamic color based on theme
+                                    maxRotation: 0, // Keep labels horizontal for better readability
+                                    minRotation: 0, // Keep labels horizontal
+                                    font: {
+                                        size: 11,
+                                        weight: '500' // Match map legend font weight
+                                    },
+                                    padding: 8 // Add more space between tick labels and axis
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: yAxisMax, // Dynamically set max
+                                title: {
+                                    display: true,
+                                    text: 'Number of Outages',
+                                    color: textColor,
+                                },
+                                grid: {
+                                    color: gridColor,
+                                },
+                                ticks: {
+                                    color: textColor,
+                                    stepSize: 1, // Ensure steps are at least 1
+                                    precision: 0, // Ensure integer labels
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 1,
+                                titleFont: {
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                bodyFont: {
+                                    size: 12,
+                                    weight: '500' // Match map legend font weight
+                                },
+                                padding: 12,
+                                callbacks: {
+                                    filter: function(tooltipItem) {
+                                        return tooltipItem.dataset.label === filters.nature;
+                                    },
+                                    footer: function() {
+                                        return ''; // No footer
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1200,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                });
+
+                console.log('Multi-line chart created:', cumulativeChart);
+
+                // Force resize after creation
+                setTimeout(() => {
+                    if (cumulativeChart) {
+                        cumulativeChart.resize();
+                        console.log('Chart resized');
+                    }
+                }, 100);
+            }
+
+            // Report Generation Functions
+            function showToast(message) {
+                const toast = document.getElementById('toast-notification');
+                const toastMessage = document.getElementById('toast-message');
+
+                if (toast && toastMessage) {
+                    toastMessage.textContent = message;
+                    toast.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                    }, 3000); // Hide after 3 seconds
+                }
+            }
+
+            async function handleCSVExport() {
+                try {
+                    const response = await fetch('/dashboard/export-csv', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(filters)
+                    });
+
+                    // Check if the request was successful (status 200-299)
+                    if (response.ok) {
+                        const disposition = response.headers.get('Content-Disposition');
+                        let filename = 'outages_report.csv';
+                        if (disposition) {
+                            const filenameMatch = disposition.match(/filename=\"(.+?)\"/);
+                            if (filenameMatch && filenameMatch.length > 1) {
+                                filename = filenameMatch[1];
+                            }
+                        }
+
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = filename;
+                        
+                        document.body.appendChild(a);
+                        a.click();
+                        
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    } else {
+                        // If the response is not ok, it might be our custom 404 with a message
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const errorData = await response.json();
+                            if (errorData && errorData.message) {
+                                showNoDataModal();
+                            } else {
+                                showToast(`Error: ${response.statusText}`);
+                            }
+                        } else {
+                            // Handle non-JSON error responses
+                            showToast(`Error exporting data: ${response.statusText}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('CSV Export Error:', error);
+                    showToast('An unexpected network error occurred.');
+                }
+            }
+
+            // Global Filter Functions
+            function applyGlobalFilters() {
+                // Update global filters object before applying
+                filters.nature = 'Water'; // Only water outages
+                filters.time = document.getElementById('global-time-filter').value || null;
+                const scaleFilterRaw = document.getElementById('global-scale-filter').value || null;
+                filters.scale = scaleFilterRaw === 'none' ? null : scaleFilterRaw;
+                
+                fetchDashboardData();
+            }
+
+            function resetGlobalFilters() {
+                console.log('Resetting global filters to defaults');
+
+                // Reset all filter dropdowns to their default values (Water only)
+                document.getElementById('global-time-filter').value = '15m';
+                document.getElementById('global-scale-filter').value = 'none';
+
+                // Update the UI labels
+                document.getElementById('time-filter-label').textContent = 'Last 15 minutes';
+                document.getElementById('scale-filter-label').textContent = 'Outage Scale';
+
+                // Update the global filters object (Water only)
+                filters.nature = 'Water';
+                filters.time = '15m';
+                filters.scale = null;
+
+                // Apply the reset filters with new defaults
+                applyGlobalFilters();
+
+                console.log('Global filters reset successfully');
+            }
+
+            // Function to update chart colors when theme changes
+            window.updateChartColors = function() {
+                console.log('Updating chart colors for theme change...');
+                if (cumulativeChart && chartDataStore) {
+                    // Re-create the chart with the current data but new colors
+                    createLineGraph(chartDataStore);
+                }
+            };
+
+            // Set up a MutationObserver to watch for theme changes
+            const themeObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        // Re-create the chart with stored data
+                        if (cumulativeChart && chartDataStore) {
+                            createLineGraph(chartDataStore);
+                        }
+
+                        // Update map tiles for theme change
+                        if (tileLayer) {
+                            map.removeLayer(tileLayer);
+                        }
+                        const isDarkMode = document.documentElement.classList.contains('dark');
+                        const newTileUrl = isDarkMode
+                            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+                        tileLayer = L.tileLayer(newTileUrl, {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                            subdomains: 'abcd',
+                            maxZoom: 19
+                        }).addTo(map);
+                    }
+                });
+            });
+
+            // Start observing the <html> element for class attribute changes
+            themeObserver.observe(document.documentElement, { attributes: true });
+        });
+    </script>
+
+    <!-- Chat Modal HTML -->
+    <div id="chatModalOverlay" class="chat-modal-overlay">
+        <div class="chat-modal">
+            <div class="chat-modal-header">
+                <h3>Chat History - Eric Evans</h3>
+                <button class="chat-modal-close" onclick="closeChatModal()">&times;</button>
+            </div>
+            <div class="chat-modal-body" id="chatModalBody">
+                <!-- Chat messages will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed top-5 right-5 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg text-sm font-semibold hidden z-[10001] flex items-center gap-3">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- No Data Modal for Export CSV -->
+    <div id="noDataModal" class="fixed inset-0 z-[10002] flex items-center justify-center hidden" tabindex="-1" aria-modal="true" style="background: rgba(0,0,0,0.55); pointer-events: auto;">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl p-8 w-full max-w-md min-w-[350px] rounded-lg" style="box-shadow: 0 8px 32px rgba(0,0,0,0.25); min-height: 220px; display: flex; flex-direction: column; align-items: center; pointer-events: auto;">
+            <svg class="w-12 h-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Data Available</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">There is no data available for the selected filters. Please adjust your filters and try again.</p>
+            <button onclick="closeNoDataModal()" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded font-medium shadow">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Chat modal functionality
+        const chatMessages = [
+            {
+                type: 'user',
+                message: 'Id like to report an outage'
+            },
+            {
+                type: 'bot',
+                message: 'Hi Eric, I\'m Billie from Davidson Water, Inc. I can help you with that water outage report. Could you let me know when the water outage started? If it\'s not at your registered address, just let me know the location too.'
+            },
+            {
+                type: 'user',
+                message: 'the water outage started 15mins ago at 2700 Harlandale Ave, Dallas, TX 75216, USA'
+            },
+            {
+                type: 'bot',
+                message: 'I\'ve reported the water outage at 2700 Harlandale Ave for you. Would you like to check the status of any other outages or need info on your account while you wait?'
+            },
+            {
+                type: 'csr',
+                message: 'Outage Status has been updated by CSR to Accepted at 9:10am'
+            },
+            {
+                type: 'bot',
+                message: 'Service is usually restored within 3 hours, so your lights should be back on soon—unless your fridge starts protesting and holds out for better snacks. Would you like to be updated on the status of your outage?'
+            },
+            {
+                type: 'user',
+                message: 'sure'
+            },
+            {
+                type: 'bot',
+                message: 'Alright, I\'ll keep you updated!'
+            },
+            {
+                type: 'csr',
+                message: 'Outage Status has been updated by CSR to Work in Progress at 12:54pm'
+            },
+            {
+                type: 'bot',
+                message: 'A service crew has been dispatched to fix your outage.'
+            },
+            {
+                type: 'user',
+                message: 'thanks'
+            },
+            {
+                type: 'csr',
+                message: 'Outage Status has been updated by CSR to Completed at 1:20pm'
+            },
+            {
+                type: 'bot',
+                message: 'Great news! Your water service has been restored. Is there anything else I can help you with?'
+            },
+            {
+                type: 'user',
+                message: 'Thanks! That\'s all for now.'
+            },
+        ];
+
+        function handleViewClick(customerName, event) {
+            event.preventDefault();
+            
+            // Only show modal for Eric Evans
+            if (customerName === 'Eric Evans') {
+                showChatModal();
+            } else {
+                // For other customers, you can add different functionality or just do nothing
+                console.log('View clicked for:', customerName);
+            }
+        }
+
+        function showChatModal() {
+            const overlay = document.getElementById('chatModalOverlay');
+            const body = document.getElementById('chatModalBody');
+            
+            // Clear existing content
+            body.innerHTML = '';
+            
+            // Populate chat messages
+            chatMessages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                
+                if (msg.type === 'csr') {
+                    // CSR messages are rendered as centered status boxes
+                    messageDiv.className = 'csr-status-box';
+                    messageDiv.innerHTML = `
+                        <div class="csr-status-content">
+                            ${msg.message}
+                        </div>
+                    `;
+                } else {
+                    // Regular chat messages (user and bot)
+                    messageDiv.className = `chat-message ${msg.type}`;
+                    
+                    let avatarContent = '';
+                    if (msg.type === 'user') {
+                        // Using the uploaded user avatar image
+                        avatarContent = `<div style="width: 100%; height: 100%; border-radius: 50%; background-color: #9ca3af; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            <svg style="width: 60%; height: 60%; color: #ffffff;" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>`;
+                    } else if (msg.type === 'bot') {
+                        avatarContent = '<img src="/static/william_outage.png" alt="Billie Bot" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">';
+                    }
+                    
+                    messageDiv.innerHTML = `
+                        <div class="chat-avatar ${msg.type}">
+                            ${avatarContent}
+                        </div>
+                        <div class="chat-bubble ${msg.type}">
+                            ${msg.message}
+                        </div>
+                    `;
+                }
+                
+                body.appendChild(messageDiv);
+            });
+            
+            // Show modal
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
+            // Focus trap - prevent tab navigation outside modal
+            overlay.addEventListener('keydown', handleModalKeydown);
+        }
+
+        function closeChatModal() {
+            const overlay = document.getElementById('chatModalOverlay');
+            overlay.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore background scrolling
+            
+            // Remove event listener
+            overlay.removeEventListener('keydown', handleModalKeydown);
+        }
+
+        function handleModalKeydown(event) {
+            // Close modal on Escape key
+            if (event.key === 'Escape') {
+                closeChatModal();
+            }
+        }
+
+        // Close modal when clicking outside the modal content
+        document.getElementById('chatModalOverlay').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeChatModal();
+            }
+        });
+
+        function showNoDataModal() {
+            document.getElementById('noDataModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeNoDataModal() {
+            document.getElementById('noDataModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+{% endblock %}

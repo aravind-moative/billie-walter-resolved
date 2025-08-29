@@ -1,0 +1,403 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="flex items-center justify-center p-4 pt-20 pb-16 h-[calc(100vh-4rem)] overflow-hidden">
+    <!-- Phone Frame - Only visible on md screens and up -->
+    <div class="hidden md:block relative w-[399px] h-[779px] bg-gray-900 dark:bg-black rounded-[48px] shadow-2xl overflow-hidden">
+        <!-- Screen -->
+        <div id="phoneScreen" class="absolute top-[12px] left-[12px] right-[12px] bottom-[12px] bg-white dark:bg-gray-900 rounded-[40px] overflow-hidden border border-gray-200 dark:border-transparent transition-all duration-300">
+            <!-- Screen Content -->
+            <div class="w-full h-full bg-gray-100 dark:bg-gray-900 flex flex-col">
+                <!-- Header -->
+                <div class="sticky top-0 bg-gray-100 dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 z-50">
+                    <div class="flex items-center">
+                        <img class="w-10 h-10" src="/static/william_outage.png" alt="Davidson Water, Inc. Logo">
+                        <div class="ml-3">
+                            <h2 class="text-sm font-semibold dark:text-white">Davidson Water, Inc.</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Online</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div id="messages" class="flex-1 overflow-y-auto p-2 space-y-4">
+                </div>
+
+                <!-- Input Area -->
+                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-4 bg-white dark:bg-gray-900 flex-shrink-0">
+                    <div class="flex items-center space-x-2">
+                        <button class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </button>
+                        <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2">
+                            <input type="text" id="messageInput" placeholder="Message" class="w-full bg-transparent outline-none text-sm dark:text-white placeholder-gray-500 dark:placeholder-gray-400" disabled>
+                        </div>
+                        <button id="sendButton" class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center" disabled>
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Speaker -->
+        <div class="absolute bottom-[20px] left-1/2 transform -translate-x-1/2 w-[100px] h-[4px] bg-gray-700 rounded-full"></div>
+    </div>
+
+            <!-- Mobile View - Only visible on screens smaller than md -->
+        <div class="md:hidden w-full h-[calc(100vh-4rem)] bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gray-100 dark:bg-gray-900 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center">
+                    <img class="w-10 h-10" src="/static/william_outage.png" alt="Davidson Water, Inc. Logo">
+                <div class="ml-3">
+                    <h2 class="text-sm font-semibold dark:text-white">Davidson Water, Inc.</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Online</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messagesMobile" class="flex-1 overflow-y-auto p-2 space-y-4 pb-40">
+        </div>
+
+        <!-- Input Area -->
+        <div class="fixed bottom-16 left-0 right-0 border-t border-gray-200 dark:border-gray-700 px-4 py-4 bg-white dark:bg-gray-900">
+            <div class="flex items-center space-x-2">
+                <button class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </button>
+                <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2">
+                    <input type="text" id="messageInputMobile" placeholder="Message" class="w-full bg-transparent outline-none text-sm dark:text-white placeholder-gray-500 dark:placeholder-gray-400" disabled>
+                </div>
+                <button id="sendButtonMobile" class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center" disabled>
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Add this at the beginning of your script
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+
+
+    const phoneScreen = document.getElementById('phoneScreen');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const messageInputMobile = document.getElementById('messageInputMobile');
+    const sendButtonMobile = document.getElementById('sendButtonMobile');
+    let phoneNumber = sessionStorage.getItem('phoneNumber');
+    let chatHistory = JSON.parse(sessionStorage.getItem('chatHistory') || '[]');
+    let sessionId = sessionStorage.getItem('sessionId');
+    
+    // Debug: Log phone number status
+    console.log('Chat - Phone Number:', phoneNumber, 'Type:', typeof phoneNumber);
+    
+    // Function to check phone number status
+    function checkPhoneNumberStatus() {
+        const storedPhone = sessionStorage.getItem('phoneNumber');
+        console.log('Chat - Stored phone number:', storedPhone, 'Local phoneNumber:', phoneNumber);
+        return storedPhone && storedPhone !== 'null' && storedPhone !== '';
+    }
+
+    // Generate a new session ID if one doesn't exist
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('sessionId', sessionId);
+    }
+
+
+
+    function updatePhoneState() {
+        if (!phoneNumber) {
+            if (phoneScreen) phoneScreen.style.filter = 'grayscale(100%)';
+            if (phoneScreen) phoneScreen.style.opacity = '0.5';
+            // Disable input areas
+            messageInput.disabled = true;
+            messageInputMobile.disabled = true;
+            messageInput.placeholder = 'Please verify your phone number first';
+            messageInputMobile.placeholder = 'Please verify your phone number first';
+            sendButton.disabled = true;
+            sendButtonMobile.disabled = true;
+            sendButton.classList.add('opacity-50');
+            sendButtonMobile.classList.add('opacity-50');
+            
+            
+        } else {
+            if (phoneScreen) phoneScreen.style.filter = 'none';
+            if (phoneScreen) phoneScreen.style.opacity = '1';
+            // Enable input areas
+            messageInput.disabled = false;
+            messageInputMobile.disabled = false;
+            messageInput.placeholder = 'Message';
+            messageInputMobile.placeholder = 'Message';
+            sendButton.disabled = false;
+            sendButtonMobile.disabled = false;
+            sendButton.classList.remove('opacity-50');
+            sendButtonMobile.classList.remove('opacity-50');
+        }
+    }
+
+    // Listen for phone number changes
+    window.addEventListener('phoneNumberChanged', async (event) => {
+        phoneNumber = event.detail.phoneNumber;
+        chatHistory = [];
+        messagesContainer.innerHTML = '';
+        messagesContainerMobile.innerHTML = '';
+        updatePhoneState();
+    });
+
+    // Listen for chat clear
+    window.addEventListener('chatCleared', () => {
+        // Clear UI
+        chatHistory = [];
+        messagesContainer.innerHTML = '';
+        messagesContainerMobile.innerHTML = '';
+        
+        // Regenerate session ID
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('sessionId', sessionId);
+        
+        // Re-initialize the state with the new session
+        updatePhoneState();
+    });
+
+    // Listen for phone verification from other modules
+    window.addEventListener('phoneNumberVerified', (event) => {
+        phoneNumber = event.detail.phoneNumber;
+        console.log('Chat - Received phone verification event:', phoneNumber);
+        updatePhoneState();
+        // Add welcome message if this is a fresh session
+        if (chatHistory.length === 0) {
+            addMessage('Hello! I\'m Billie, your Davidson Water assistant. How can I help you today?', false);
+        }
+    });
+
+    // Initialize phone state - check if phone number exists globally
+    if (!checkPhoneNumberStatus()) {
+        console.log('Chat - No valid phone number found, chat disabled');
+        // Show a message to the user that they need to set up phone number in settings
+        const messagesContainer = document.getElementById('messages');
+        const messagesContainerMobile = document.getElementById('messagesMobile');
+        
+        const setupMessage = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <div class="mb-4">
+                        <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Phone Number Required</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Please set up your phone number in the settings to start chatting.</p>
+                    <button onclick="document.getElementById('phoneDropdownBtn').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        Open Settings
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        if (messagesContainer) messagesContainer.innerHTML = setupMessage;
+        if (messagesContainerMobile) messagesContainerMobile.innerHTML = setupMessage;
+    } else {
+        console.log('Chat - Phone number found, enabling chat');
+        // Phone number exists, enable chat immediately
+        updatePhoneState();
+        // Add welcome message if this is a fresh session
+        if (chatHistory.length === 0) {
+            addMessage('Hello! I\'m Billie, your Davidson Water assistant. How can I help you today?', false);
+        }
+    }
+
+    // Load chat history
+    function loadChatHistory() {
+        // Clear existing messages in the UI
+        messagesContainer.innerHTML = '';
+        messagesContainerMobile.innerHTML = '';
+        // Load messages from sessionStorage
+        chatHistory.forEach(msg => {
+            addMessage(msg.content, msg.isUser, false); // Added false parameter to prevent saving to sessionStorage
+        });
+    }
+
+    // Chat functionality
+    const messagesContainer = document.getElementById('messages');
+    const messagesContainerMobile = document.getElementById('messagesMobile');
+
+    function addMessage(content, isUser = false, saveToHistory = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex items-start space-x-2';
+
+        // Function to convert URLs to clickable links
+        const convertUrlsToLinks = (text) => {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-blue-400 hover:text-blue-300 underline">${url}</a>`);
+        };
+
+        if (!isUser) {
+            messageDiv.innerHTML = `
+                <div class="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 max-w-[80%] break-words">
+                    <p class="text-sm text-gray-800 dark:text-gray-200">${convertUrlsToLinks(content)}</p>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="flex-1"></div>
+                <div class="bg-blue-500 rounded-lg p-3 max-w-[80%] break-words">
+                    <p class="text-sm text-white">${convertUrlsToLinks(content)}</p>
+                </div>
+            `;
+        }
+
+        // Add message to both containers
+        messagesContainer.appendChild(messageDiv.cloneNode(true));
+        messagesContainerMobile.appendChild(messageDiv);
+
+        // Scroll both containers
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messagesContainerMobile.scrollTop = messagesContainerMobile.scrollHeight;
+
+        // Only save to chat history if saveToHistory is true
+        if (saveToHistory) {
+            chatHistory.push({ content, isUser });
+            sessionStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+    }
+
+    // Load chat history on page load
+    loadChatHistory();
+
+    async function sendMessage(messageInput, sendButton, messagesContainer) {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        // Check if phone number exists
+        if (!phoneNumber) {
+            // Show settings button to user
+            const setupMessage = `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Phone Number Required</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Please set up your phone number in the settings to start chatting.</p>
+                        <button onclick="document.getElementById('phoneDropdownBtn').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            Open Settings
+                        </button>
+                    </div>
+                </div>
+            `;
+            messagesContainer.innerHTML = setupMessage;
+            return;
+        }
+
+        // Add user message to chat
+        addMessage(message, true);
+        messageInput.value = '';
+
+        // Create and show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'flex items-start space-x-2';
+        typingIndicator.innerHTML = `
+            <div class="bg-gray-200 dark:bg-gray-700 rounded-lg p-3">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(typingIndicator);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    phone_number: phoneNumber,
+                    session_id: sessionId
+                }),
+            });
+
+            const data = await response.json();
+            // Remove typing indicator
+            typingIndicator.remove();
+
+            if (data.error) {
+                addMessage('Sorry, there was an error processing your message.');
+            } else {
+                addMessage(data.response);
+            }
+        } catch (error) {
+            // Remove typing indicator
+            typingIndicator.remove();
+            console.error('Error:', error);
+            addMessage('Sorry, there was an error connecting to the server.');
+        }
+    }
+
+    // Desktop event listeners
+    sendButton.addEventListener('click', () => sendMessage(messageInput, sendButton, messagesContainer));
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage(messageInput, sendButton, messagesContainer);
+        }
+    });
+
+    // Mobile event listeners
+    sendButtonMobile.addEventListener('click', () => sendMessage(messageInputMobile, sendButtonMobile, messagesContainerMobile));
+    messageInputMobile.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage(messageInputMobile, sendButtonMobile, messagesContainerMobile);
+        }
+    });
+
+    // Handle browser tab close - clear phone verification records
+    window.addEventListener('beforeunload', async function(event) {
+        try {
+            // Clear all phone verification records when browser tab closes
+            await fetch('/api/clear-phone-verifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            console.log('Phone verification records cleared on tab close');
+        } catch (error) {
+            console.error('Error clearing phone verification records:', error);
+        }
+    });
+
+    // Note: Removed visibilitychange event listener to prevent clearing phone verification when switching tabs
+</script>
+{% endblock %}

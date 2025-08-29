@@ -1,0 +1,493 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<!-- Database Admin Content with Sidebar Layout -->
+<div class="p-6">
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm hidden z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 px-6 pb-6 pt-6 text-left shadow-2xl transition-all border border-gray-200 dark:border-gray-700 sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white" id="modal-title">Delete Confirmation</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-600 dark:text-gray-400" id="modalMessage">Are you sure you want to delete this item?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 sm:mt-4 sm:flex sm:flex-row-reverse sm:gap-3">
+                        <button type="button" id="confirmDelete" class="inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-colors duration-200 sm:w-auto">Delete</button>
+                        <button type="button" id="cancelDelete" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-offset-gray-800 transition-colors duration-200 sm:mt-0 sm:w-auto">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Administrative Database</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">View active outages, customer accounts, and billing information</p>
+    </div>
+    
+    <!-- Tab Navigation -->
+            <div>
+                <div class="sm:hidden">
+                    <label for="tabs" class="sr-only">Select a tab</label>
+                    <select id="tabs" name="tabs" class="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
+                        <option value="outages" selected>Outages</option>
+                        <option value="billing">Billing</option>
+                        <option value="meters">Meters</option>
+                        <option value="customers">Customers</option>
+                    </select>
+                </div>
+                <div class="hidden sm:block">
+                    <div class="border-b border-gray-200 dark:border-gray-700">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button onclick="showTab('outages')" class="border-primary-500 text-primary-500 dark:text-primary-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 [&:not(.border-primary-500)]:hover:text-gray-700 [&:not(.border-primary-500)]:dark:hover:text-gray-300 [&:not(.border-primary-500)]:hover:border-gray-300 [&:not(.border-primary-500)]:dark:hover:border-gray-600" aria-current="page">
+                                Outages
+                            </button>
+                            <button onclick="showTab('billing')" class="border-transparent text-gray-500 dark:text-gray-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 [&:not(.border-primary-500)]:hover:text-gray-700 [&:not(.border-primary-500)]:dark:hover:text-gray-300 [&:not(.border-primary-500)]:hover:border-gray-300 [&:not(.border-primary-500)]:dark:hover:border-gray-600">
+                                Billing
+                            </button>
+                            <button onclick="showTab('meters')" class="border-transparent text-gray-500 dark:text-gray-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 [&:not(.border-primary-500)]:hover:text-gray-700 [&:not(.border-primary-500)]:dark:hover:text-gray-300 [&:not(.border-primary-500)]:hover:border-gray-300 [&:not(.border-primary-500)]:dark:hover:border-gray-600">
+                                Meters
+                            </button>
+                            <button onclick="showTab('customers')" class="border-transparent text-gray-500 dark:text-gray-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 [&:not(.border-primary-500)]:hover:text-gray-700 [&:not(.border-primary-500)]:dark:hover:text-gray-300 [&:not(.border-primary-500)]:hover:border-gray-300 [&:not(.border-primary-500)]:dark:hover:border-gray-600">
+                                Customers
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outages Tab Content -->
+            <div id="outages-tab" class="mt-8">
+                <!-- Scroll indicator -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Outage Records</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">← Scroll horizontally to view all columns →</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-max divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th scope="col" class="py-4 pl-6 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">ID</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Reference</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Account ID</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Customer</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Address</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Latitude</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Longitude</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Nature</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Start Time</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">End Time</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Status</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Created At</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Updated At</th>
+                                    <th scope="col" class="px-3 py-4 pr-6 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                                {% for outage in recent_outages %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200 group">
+                                    <td class="py-4 pl-6 pr-3 text-sm font-semibold text-gray-900 dark:text-white">{{ outage.id }}</td>
+                                    <td class="px-3 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">{{ outage.reference_number }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ outage.account_id }}</td>
+                                    <td class="px-3 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ outage.name }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                        <div class="max-w-xs truncate" title="{{ outage.address }}">{{ outage.address }}</div>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono">{{ "%.6f"|format(outage.latitude) if outage.latitude else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono">{{ "%.6f"|format(outage.longitude) if outage.longitude else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm">
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-3 h-3 rounded-full border-2 
+                                                {% if outage.nature|lower|trim == 'water' %}bg-blue-500 border-blue-600
+                                                {% else %}bg-gray-500 border-gray-600{% endif %}">
+                                            </div>
+                                            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ outage.nature }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono">{{ outage.start_time }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono">{{ outage.end_time or '—' }}</td>
+                                    <td class="px-3 py-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                            {% if outage.status == 'resolved' %}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400
+                                            {% elif outage.status == 'in_progress' %}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400
+                                            {% else %}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400{% endif %}">
+                                            <div class="w-1.5 h-1.5 rounded-full mr-1.5
+                                                {% if outage.status == 'resolved' %}bg-success-500
+                                                {% elif outage.status == 'in_progress' %}bg-warning-500
+                                                {% else %}bg-critical-500{% endif %}"></div>
+                                            {{ outage.status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ outage.created_at.strftime('%m/%d %H:%M') if outage.created_at else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ outage.updated_at.strftime('%m/%d %H:%M') if outage.updated_at else '—' }}</td>
+                                    <td class="px-3 py-4 pr-6 text-sm">
+                                        <button onclick="deleteOutage('{{ outage.reference_number }}')" 
+                                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-critical-700 dark:text-white bg-critical-50 dark:bg-critical-900/20 hover:bg-critical-100 dark:hover:bg-critical-900/40 border border-critical-200 dark:border-critical-700 rounded-md transition-all duration-200 group-hover:scale-105">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing Tab Content -->
+            <div id="billing-tab" class="mt-8 hidden">
+                <!-- Scroll indicator -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Billing Records</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">← Scroll horizontally to view all columns →</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-max divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th scope="col" class="py-4 pl-6 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Account ID</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Name</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Phone</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Address</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Current Balance</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Unpaid Debt Recovery</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Raw Balance</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Days Left</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Last Payment Date</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Last Payment Amount</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Service Type</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Summary From Date</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Summary To Date</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Avg Use Amount</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Avg Use Charge</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Latest Reading Value</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Reading Date</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Reading From Date</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Reading Type</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Usage</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Charge Amount</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Tax Amount</th>
+                                    <th scope="col" class="px-3 py-4 pr-6 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                                {% for account in customer_accounts %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                                    <td class="py-4 pl-6 pr-3 text-sm font-semibold text-gray-900 dark:text-white">{{ account.account_id }}</td>
+                                    <td class="px-3 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">{{ account.name }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.phone }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                        <div class="max-w-xs truncate" title="{{ account.address }}">{{ account.address }}</div>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm font-mono">
+                                        <span class="{% if account.billing and account.billing.current_balance and account.billing.current_balance > 0 %}text-critical-600 dark:text-critical-400 font-semibold{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                                            ${{ "%.2f"|format(account.billing.current_balance) if account.billing and account.billing.current_balance is not none else '0.00' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm font-mono text-warning-600 dark:text-warning-400">
+                                        ${{ "%.2f"|format(account.billing.unpaid_debt_recovery) if account.billing and account.billing.unpaid_debt_recovery is not none else '0.00' }}
+                                    </td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">
+                                        ${{ "%.2f"|format(account.billing.raw_balance) if account.billing and account.billing.raw_balance is not none else '0.00' }}
+                                    </td>
+                                    <td class="px-3 py-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                            {% if account.billing and account.billing.days_left %}
+                                                {% if account.billing.days_left|int <= 7 %}bg-critical-100 dark:bg-critical-900/30 text-critical-800 dark:text-critical-300
+                                                {% elif account.billing.days_left|int <= 30 %}bg-warning-100 dark:bg-warning-900/30 text-warning-800 dark:text-warning-300
+                                                {% else %}bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300{% endif %}
+                                            {% else %}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400{% endif %}">
+                                            {{ account.billing.days_left if account.billing and account.billing.days_left is not none else '—' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.billing.last_payment_date.strftime('%m/%d %H:%M') if account.billing and account.billing.last_payment_date else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-success-600 dark:text-success-400">
+                                        ${{ "%.2f"|format(account.billing.last_payment_amount) if account.billing and account.billing.last_payment_amount is not none else '0.00' }}
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.summaries[0].service_type if account.summaries else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.summaries[0].from_date.strftime('%m/%d %H:%M') if account.summaries else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.summaries[0].to_date.strftime('%m/%d %H:%M') if account.summaries else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">{{ "%.2f"|format(account.summaries[0].avg_use_amount) if account.summaries else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">${{ "%.2f"|format(account.summaries[0].avg_use_charge) if account.summaries else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">{{ "%.2f"|format(account.readings[0].reading_value) if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.readings[0].read_date.strftime('%m/%d %H:%M') if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.readings[0].read_from_date.strftime('%m/%d %H:%M') if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.readings[0].read_type if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">{{ "%.2f"|format(account.readings[0].usage) if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">${{ "%.2f"|format(account.readings[0].charge_amount) if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">${{ "%.2f"|format(account.readings[0].tax_amount) if account.readings else '—' }}</td>
+                                    <td class="px-3 py-4 pr-6 text-sm">
+                                        <button onclick="deleteAccount('{{ account.account_id }}')" 
+                                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-critical-700 dark:text-white bg-critical-50 dark:bg-critical-900/20 hover:bg-critical-100 dark:hover:bg-critical-900/40 border border-critical-200 dark:border-critical-700 rounded-md transition-all duration-200">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meters Tab Content -->
+            <div id="meters-tab" class="mt-8 hidden">
+                <!-- Scroll indicator -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Meter Records</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">← Scroll horizontally to view all columns →</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th scope="col" class="py-4 pl-6 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Meter Number</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Account ID</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Customer Name</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Type</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Rate</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Service</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Multiplier</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Tier 1 Rate</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Last Disconnect</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Latest Reading</th>
+                                    <th scope="col" class="px-3 py-4 pr-6 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                                {% for account in customer_accounts %}
+                                    {% for meter in account.meters %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                                        <td class="py-4 pl-6 pr-3 text-sm font-semibold text-gray-900 dark:text-white">{{ meter.meter_number }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ meter.account_id }}</td>
+                                        <td class="px-3 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">{{ account.name }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ meter.type_mapping_code }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ meter.rate_mapping_code }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ meter.service }}</td>
+                                        <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">{{ "%.2f"|format(meter.multiplier) if meter.multiplier is not none else '—' }}</td>
+                                        <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">${{ "%.2f"|format(meter.tier1_rate) if meter.tier1_rate is not none else '—' }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ meter.last_disconnect.strftime('%m/%d %H:%M') if meter.last_disconnect else '—' }}</td>
+                                        <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                            {% if meter.readings %}
+                                                <div class="text-gray-700 dark:text-gray-300 font-medium">{{ meter.readings[0].reading_value }} gallons</div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    {{ meter.readings[0].read_date.strftime('%m/%d/%Y') }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Peak: ${{ "%.2f"|format(meter.readings[0].tou_peak) if meter.readings[0].tou_peak is not none else '0.00' }}
+                                                </div>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-3 py-4 pr-6 text-sm">
+                                            <button onclick="deleteAccount('{{ account.account_id }}')" 
+                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-critical-700 dark:text-white bg-critical-50 dark:bg-critical-900/20 hover:bg-critical-100 dark:hover:bg-critical-900/40 border border-critical-200 dark:border-critical-700 rounded-md transition-all duration-200">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Tab Content -->
+            <div id="customers-tab" class="mt-8 hidden">
+                <!-- Scroll indicator -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Customer Records</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">← Scroll horizontally to view all columns →</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th scope="col" class="py-4 pl-6 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Account ID</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Name</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Phone</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Address</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Zip Code</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Account Type</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Language</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Status</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Recovery Rate</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Tax Jurisdiction</th>
+                                    <th scope="col" class="px-3 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Created At</th>
+                                    <th scope="col" class="px-3 py-4 pr-6 text-left text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                                {% for account in customer_accounts %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                                    <td class="py-4 pl-6 pr-3 text-sm font-semibold text-gray-900 dark:text-white">{{ account.account_id }}</td>
+                                    <td class="px-3 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">{{ account.name }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.phone }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                        <div class="max-w-xs truncate" title="{{ account.address }}">{{ account.address }}</div>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.zip_code }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.account_type }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.language }}</td>
+                                    <td class="px-3 py-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                            {% if account.status == 'Active' %}bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-300
+                                            {% else %}bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400{% endif %}">
+                                            {{ account.status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm font-mono text-gray-600 dark:text-gray-300">{{ "%.2f"|format(account.recovery_rate) if account.recovery_rate is not none else '—' }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-600 dark:text-gray-300">{{ account.tax_jurisdiction_mapping_code }}</td>
+                                    <td class="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ account.created_at.strftime('%m/%d %H:%M') if account.created_at else '—' }}</td>
+                                    <td class="px-3 py-4 pr-6 text-sm">
+                                        <button onclick="deleteAccount('{{ account.account_id }}')" 
+                                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-critical-700 dark:text-white bg-critical-50 dark:bg-critical-900/20 hover:bg-critical-100 dark:hover:bg-critical-900/40 border border-critical-200 dark:border-critical-700 rounded-md transition-all duration-200">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+<script>
+    let currentDeleteAction = null;
+
+    function showDeleteModal(message, deleteAction) {
+        const modal = document.getElementById('deleteModal');
+        const modalMessage = document.getElementById('modalMessage');
+        modalMessage.textContent = message;
+        modal.classList.remove('hidden');
+        currentDeleteAction = deleteAction;
+    }
+
+    function hideDeleteModal() {
+        const modal = document.getElementById('deleteModal');
+        modal.classList.add('hidden');
+        currentDeleteAction = null;
+    }
+
+    // Set up modal event listeners
+    document.getElementById('confirmDelete').addEventListener('click', () => {
+        if (currentDeleteAction) {
+            currentDeleteAction();
+        }
+        hideDeleteModal();
+    });
+
+    document.getElementById('cancelDelete').addEventListener('click', hideDeleteModal);
+
+    // Close modal when clicking outside
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            hideDeleteModal();
+        }
+    });
+
+    function showTab(tabName) {
+        // Hide all tabs
+        document.getElementById('outages-tab').classList.add('hidden');
+        document.getElementById('billing-tab').classList.add('hidden');
+        document.getElementById('meters-tab').classList.add('hidden');
+        document.getElementById('customers-tab').classList.add('hidden');
+
+        // Show selected tab
+        document.getElementById(tabName + '-tab').classList.remove('hidden');
+
+        // Update tab styles
+        const tabs = document.querySelectorAll('nav button');
+        tabs.forEach(tab => {
+            if (tab.textContent.trim().toLowerCase() === tabName) {
+                tab.classList.add('border-primary-500', 'text-primary-500', 'dark:text-primary-500');
+                tab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            } else {
+                tab.classList.remove('border-primary-500', 'text-primary-500', 'dark:text-primary-500');
+                tab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+            }
+        });
+    }
+
+    // Handle mobile tab selection
+    document.getElementById('tabs').addEventListener('change', function(e) {
+        showTab(e.target.value);
+    });
+
+    // Delete functions
+    async function deleteOutage(referenceNumber) {
+        showDeleteModal(`Are you sure you want to delete outage ${referenceNumber}?`, async () => {
+            try {
+                const response = await fetch(`/api/delete-outage/${referenceNumber}`, {
+                    method: 'DELETE',
+                });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete outage');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the outage');
+            }
+        });
+    }
+
+    async function deleteAccount(accountId) {
+        showDeleteModal(`Are you sure you want to delete account ${accountId}?`, async () => {
+            try {
+                const response = await fetch(`/api/delete-account/${accountId}`, {
+                    method: 'DELETE',
+                });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete account');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the account');
+            }
+        });
+    }
+</script>
+{% endblock %}
