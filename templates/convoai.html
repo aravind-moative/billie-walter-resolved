@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            ws = new WebSocket('ws://localhost:8000/ws');
+            ws = new WebSocket('wss://voiceai.moative.com/ws');
         
             ws.onopen = function() {
              console.log('WebSocket connected');
